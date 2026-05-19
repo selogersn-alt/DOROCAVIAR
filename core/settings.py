@@ -40,6 +40,22 @@ if DEBUG:
     ALLOWED_HOSTS = ['*']
 
 # --- SÉCURITÉ AVANCÉE & PROXY ---
+# Ces paramètres de proxy doivent être actifs en production comme en développement
+# pour que Django comprenne qu'il est derrière un reverse proxy Docker / Nginx
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
+
+# CSRF Trusted Origins (Requis pour Django 4.x+ avec reverse proxy / HTTPS)
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[
+    'https://*.dorocaviar.com',
+    'http://*.dorocaviar.com',
+    'https://157.180.127.70',
+    'http://157.180.127.70',
+    'http://157.180.127.70:8005',
+    'https://157.180.127.70:8005',
+])
+
 if not DEBUG:
     # HSTS
     SECURE_HSTS_SECONDS = 31536000 # 1 an
@@ -48,9 +64,6 @@ if not DEBUG:
     
     # Redirection HTTPS et Cookies derrière Proxy (Cloudflare, DigitalOcean)
     SECURE_SSL_REDIRECT = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    USE_X_FORWARDED_HOST = True
-    USE_X_FORWARDED_PORT = True
     
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -62,9 +75,6 @@ if not DEBUG:
     
     # Referrer Policy
     SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
-    
-    # CSRF Trusted Origins
-    CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=['https://*.dorocaviar.com', 'https://*.ondigitalocean.app'])
 
 # Configuration CKEDITOR pour la sécurité
 CKEDITOR_CONFIGS = {
