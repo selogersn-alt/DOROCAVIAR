@@ -22,10 +22,13 @@
     <meta name="twitter:title" content="{% block twitter_title %}{{ platform.site_name }}{% endblock %}">
     <meta name="twitter:description" content="{% block twitter_description %}{{ platform.meta_description }}{% endblock %}">
     <meta name="twitter:image" content="{% block twitter_image %}{{ platform.logo_url }}{% endblock %}">
-    
+    <!-- Favicon -->
     {% if platform.favicon %}
-    <link rel="icon" href="{{ platform.favicon.url }}">
+    <link rel="icon" type="image/x-icon" href="{{ platform.favicon.url }}">
+    {% else %}
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     {% endif %}
+    <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico">
 
     <!-- PWA Manifest & Mobile Meta Tags -->
     <link rel="manifest" href="/static/manifest.json">
