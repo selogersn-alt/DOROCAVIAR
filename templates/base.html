@@ -27,6 +27,12 @@
     <link rel="icon" href="{{ platform.favicon.url }}">
     {% endif %}
 
+    <!-- PWA Manifest & Mobile Meta Tags -->
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#E6007E">
+
     <!-- Google Fonts & FontAwesome Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -297,12 +303,9 @@
                         title="Messagerie et Notifications"
                         x-data="{ unreadCount: 0 }"
                         x-init="
-                            setInterval(() => {
-                                fetch('{% url 'notification_count' %}')
-                                    .then(res => res.json())
-                                    .then(data => { unreadCount = data.total; })
-                                    .catch(e => {});
-                            }, 15000);
+                            window.addEventListener('sse-notification', (e) => {
+                                unreadCount = e.detail.total;
+                            });
                             fetch('{% url 'notification_count' %}')
                                 .then(res => res.json())
                                 .then(data => { unreadCount = data.total; });
@@ -411,15 +414,27 @@
                     <span :class="sidebarOpen ? 'opacity-100' : 'md:hidden opacity-0'" class="font-medium text-sm transition-opacity duration-300">Blog</span>
                 </a>
 
-                <!-- SIDEBAR ADVERTISEMENT -->
+                <!-- SIDEBAR ADVERTISEMENT / PROMO -->
+                {% if not user.is_pro %}
                 <div 
                     :class="sidebarOpen ? 'block' : 'hidden'" 
                     class="mt-4 p-4 rounded-2xl glass-panel border border-brand-border/40 text-center bg-gradient-to-br from-brand-primary/5 to-brand-secondary/5 transition-opacity"
                 >
-                    <span class="inline-block text-[9px] uppercase tracking-wider text-brand-primary font-extrabold mb-2.5">Sponsorisé 💎</span>
-                    <img src="https://via.placeholder.com/200x150/160a12/E6007E?text=CHARME+&+LUXE" class="w-full h-auto rounded-lg mb-2 border border-brand-border/30">
-                    <p class="text-xs text-brand-text/75 font-medium leading-relaxed">Devenez membre VIP pour débloquer les privilèges.</p>
+                    <span class="inline-block text-[9px] uppercase tracking-wider text-amber-500 font-extrabold mb-2.5">💎 Offre VIP Pro</span>
+                    <p class="text-xs text-brand-text font-bold mb-3">Zéro Publicité à vie</p>
+                    <a href="{% url 'premium_page' %}" class="block text-center py-2 rounded-full bg-gradient-to-r from-brand-primary to-brand-secondary text-white font-extrabold text-[10px] active:scale-95 transition-all shadow-glow">
+                        Découvrir l'offre
+                    </a>
                 </div>
+                {% else %}
+                <div 
+                    :class="sidebarOpen ? 'block' : 'hidden'" 
+                    class="mt-4 p-4 rounded-2xl glass-panel border border-amber-500/30 text-center bg-gradient-to-br from-amber-500/10 to-brand-card/50 transition-opacity"
+                >
+                    <span class="inline-block text-[9px] uppercase tracking-wider text-amber-400 font-black mb-1.5"><i class="fa-solid fa-gem mr-1"></i> MEMBRE VIP PRO</span>
+                    <p class="text-[10px] text-brand-muted font-semibold leading-relaxed">Toutes les publicités sont bloquées. Merci de votre soutien ! 💖</p>
+                </div>
+                {% endif %}
 
                 <hr class="border-brand-border/20 my-4">
                 
@@ -441,7 +456,7 @@
         <main class="flex-1 min-w-0 flex flex-col justify-between pb-[75px] md:pb-0 transition-all duration-300">
             <div class="px-4 py-6 md:p-8 max-w-7xl mx-auto w-full flex-1">
                 <!-- Top Banner Ad -->
-                {% if ads_top %}
+                {% if ads_top and not user.is_pro %}
                     <div class="mx-auto text-center mb-6 glass-panel rounded-2xl p-4 overflow-hidden border border-brand-border/40">
                         {% for ad in ads_top %}
                             {% if ad.code %}{{ ad.code|safe }}{% endif %}
@@ -456,7 +471,7 @@
                 {% block content %}{% endblock %}
 
                 <!-- Bottom Banner Ad -->
-                {% if ads_bottom %}
+                {% if ads_bottom and not user.is_pro %}
                     <div class="mx-auto text-center mt-8 glass-panel rounded-2xl p-4 overflow-hidden border border-brand-border/40">
                         {% for ad in ads_bottom %}
                             {% if ad.code %}{{ ad.code|safe }}{% endif %}
@@ -883,6 +898,71 @@
                 document.body.appendChild(toast);
                 setTimeout(() => toast.remove(), 6000);
             }
+
+            // 3. Enregistrement du Service Worker PWA
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/static/sw.js')
+                        .then(reg => console.log('Service Worker enregistré avec succès :', reg.scope))
+                        .catch(err => console.error('Erreur d\'enregistrement du Service Worker :', err));
+                });
+            }
+
+            // 4. Écoute du flux Server-Sent Events (SSE) temps réel
+            {% if user.is_authenticated %}
+            (function() {
+                let sseSource = new EventSource("{% url 'sse_stream' %}");
+                
+                sseSource.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        console.log("SSE reçu :", data);
+                        
+                        if (data.type === 'INIT' || data.type === 'UPDATE') {
+                            const total = data.notifications_count + data.messages_count;
+                            const sseEvent = new CustomEvent('sse-notification', { 
+                                detail: { 
+                                    notifications_count: data.notifications_count,
+                                    messages_count: data.messages_count,
+                                    total: total
+                                } 
+                            });
+                            window.dispatchEvent(sseEvent);
+                            
+                            if (data.type === 'UPDATE') {
+                                if (data.notification) {
+                                    showPremiumToast(
+                                        `🔔 ${data.notification.sender}`, 
+                                        data.notification.text
+                                    );
+                                    const notifContainer = document.getElementById('notifications-container');
+                                    if (notifContainer) {
+                                        htmx.trigger(notifContainer, 'sse-refresh');
+                                    }
+                                }
+                                
+                                if (data.message) {
+                                    showPremiumToast(
+                                        `💬 ${data.message.sender}`, 
+                                        data.message.content || "Image reçue 📷"
+                                    );
+                                    const chatContainer = document.getElementById('chat-messages-container');
+                                    if (chatContainer) {
+                                        htmx.trigger(chatContainer, 'sse-refresh');
+                                    }
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        console.error("Erreur de parsing SSE :", err);
+                    }
+                };
+                
+                sseSource.onerror = function() {
+                    console.log("Connexion SSE fermée, reconnexion automatique en cours...");
+                };
+            })();
+            {% endif %}
         });
     </script>
 </body>

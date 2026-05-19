@@ -3,6 +3,9 @@ from django.utils.text import slugify
 from autoslug import AutoSlugField
 from taggit.managers import TaggableManager
 from apps.users.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.db import transaction
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
@@ -156,3 +159,14 @@ class VideoHistory(models.Model):
 
     def __str__(self):
         return f"{self.user.username} a vu {self.video.title}"
+
+@receiver(post_save, sender=Video)
+def trigger_video_processing(sender, instance, created, **kwargs):
+    """Déclenche la tâche Celery de traitement vidéo après l'enregistrement."""
+    if getattr(instance, '_ffmpeg_processed', False):
+        return
+    if instance.video_file:
+        # Importer ici pour éviter les imports circulaires
+        from .tasks import process_uploaded_video_task
+        # Exécuter après la validation de la transaction SQL
+        transaction.on_commit(lambda: process_uploaded_video_task.delay(instance.id))

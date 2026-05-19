@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Paiement Annulé - DORO CAVIAR{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto py-16 px-6 text-center">
+    <div class="relative inline-block mb-6">
+        <span class="absolute inset-0 bg-red-500 opacity-20 blur-2xl rounded-full"></span>
+        <div class="relative z-10 w-24 h-24 bg-gradient-to-tr from-red-400 to-rose-600 rounded-full flex items-center justify-center mx-auto shadow-[0_0_40px_rgba(239,68,68,0.5)]">
+            <i class="fa-solid fa-circle-xmark text-4xl text-white"></i>
+        </div>
+    </div>
+    
+    <h1 class="text-3xl font-extrabold tracking-tight text-white mb-4">
+        Paiement Annulé
+    </h1>
+    <p class="text-brand-muted text-xs leading-relaxed mb-8">
+        La transaction a été annulée. Aucun frais ne vous a été débité. Si vous avez rencontré un problème, n'hésitez pas à contacter notre support technique.
+    </p>
+
+    <div class="flex flex-col gap-3">
+        <a 
+            href="{% url 'premium_page' %}" 
+            class="w-full text-center py-3 rounded-full bg-gradient-to-r from-brand-primary to-brand-secondary text-white font-extrabold text-xs active:scale-95 transition-all shadow-glow"
+        >
+            Réessayer la souscription
+        </a>
+        <a 
+            href="/" 
+            class="w-full text-center py-3 rounded-full bg-brand-card hover:bg-brand-glass border border-brand-border text-brand-text font-bold text-xs active:scale-95 transition-all"
+        >
+            Retourner à l'accueil
+        </a>
+    </div>
+</div>
+{% endblock %}

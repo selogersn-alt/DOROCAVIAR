@@ -314,3 +314,8 @@ JAZZMIN_UI_TWEAKS = {
         "success": "btn-success"
     }
 }
+
+# Stripe Configurations
+STRIPE_PUBLIC_KEY = env('STRIPE_PUBLIC_KEY', default='pk_test_51PzE4sP4LpXg2Q7qplaceholder_key')
+STRIPE_SECRET_KEY = env('STRIPE_SECRET_KEY', default='sk_test_51PzE4sP4LpXg2Q7q0placeholder_key')
+STRIPE_WEBHOOK_SECRET = env('STRIPE_WEBHOOK_SECRET', default='')

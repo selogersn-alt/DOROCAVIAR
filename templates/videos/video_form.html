@@ -1,49 +1,366 @@
 {% extends 'base.html' %}
-{% block title %}Publier une Vidéo - {{ platform.site_name }}{% endblock %}
+{% block title %}Publier une Vidéo - DORO CAVIAR{% endblock %}
 
 {% block content %}
-<div class="container" style="margin-top: 3rem; max-width: 700px;">
-    <div style="background: white; border-radius: 20px; box-shadow: var(--shadow); padding: 2.5rem; border: 1px solid #eee;">
-        <h1 style="font-size: 2rem; margin-bottom: 2rem; color: var(--primary); font-weight: 800;">Publier une Vidéo</h1>
-        
-        <form method="POST" enctype="multipart/form-data">
-            {% csrf_token %}
-            
-            {% for field in form %}
-            <div style="margin-bottom: 1.5rem;">
-                <label style="display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem;">{{ field.label }}</label>
-                {{ field }}
-                {% if field.help_text %}
-                    <small style="color: #888;">{{ field.help_text }}</small>
-                {% endif %}
-                {% if field.errors %}
-                    <div style="color: red; font-size: 0.8rem; margin-top: 5px;">{{ field.errors }}</div>
-                {% endif %}
-            </div>
-            {% endfor %}
-            
-            <div style="margin-top: 2rem;">
-                <button type="submit" style="background: var(--primary); color: white; border: none; padding: 15px 40px; border-radius: 30px; font-weight: bold; cursor: pointer; width: 100%; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(230, 0, 126, 0.3);">
-                    Mettre en ligne maintenant
-                </button>
-            </div>
-        </form>
+<div class="max-w-5xl mx-auto py-8 px-4">
+    <!-- Page Header -->
+    <div class="mb-10 text-center md:text-left">
+        <h1 class="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
+            Publier une <span class="bg-gradient-to-r from-brand-primary to-brand-secondary bg-clip-text text-transparent">Nouvelle Vidéo</span>
+        </h1>
+        <p class="text-brand-muted text-xs md:text-sm mt-2">
+            Mettez en ligne des fichiers vidéo bruts (.mp4, .mov) ou intégrez des liens externes depuis d'autres plateformes.
+        </p>
     </div>
+
+    <!-- Upload Form -->
+    <form 
+        id="premium-upload-form"
+        method="POST" 
+        enctype="multipart/form-data" 
+        class="flex flex-col lg:flex-row gap-8"
+    >
+        {% csrf_token %}
+        
+        <!-- LEFT COLUMN: File Drop Zone (Flex: 1) -->
+        <div class="flex-1 min-w-0">
+            <div class="glass-panel p-6 rounded-3xl border border-brand-border/40 bg-brand-card/30 flex flex-col items-center justify-center text-center relative overflow-hidden min-h-[350px]">
+                <input 
+                    type="file" 
+                    name="video_file" 
+                    id="id_video_file" 
+                    accept="video/*" 
+                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                >
+                
+                <!-- Default Dropzone View -->
+                <div id="dropzone-default" class="flex flex-col items-center justify-center pointer-events-none transition-all duration-300">
+                    <div class="w-16 h-16 rounded-2xl bg-brand-primary/10 border border-brand-primary/20 text-brand-primary flex items-center justify-center mb-6 shadow-glow animate-pulse">
+                        <i class="fa-solid fa-cloud-arrow-up text-3xl"></i>
+                    </div>
+                    <h3 class="text-base font-extrabold text-white mb-2">Glissez & déposez votre vidéo ici</h3>
+                    <p class="text-xs text-brand-muted mb-4">Ou cliquez pour parcourir vos fichiers locaux</p>
+                    <span class="px-4 py-2 bg-brand-border/30 rounded-full border border-brand-border/20 text-[10px] font-black uppercase text-brand-text/75">
+                        MP4, MOV, AVI jusqu'à 500 Mo
+                    </span>
+                </div>
+
+                <!-- Selected File Info View (Hidden by default) -->
+                <div id="dropzone-selected" class="hidden flex-col items-center justify-center pointer-events-none transition-all duration-300">
+                    <div class="w-16 h-16 rounded-2xl bg-green-500/10 border border-green-500/20 text-green-400 flex items-center justify-center mb-6 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+                        <i class="fa-solid fa-circle-check text-3xl"></i>
+                    </div>
+                    <h3 class="text-sm font-extrabold text-white mb-1 truncate max-w-[280px]" id="selected-file-name">Fichier sélectionné</h3>
+                    <p class="text-[10px] text-brand-muted font-bold" id="selected-file-size">0.00 Mo</p>
+                    <button type="button" id="btn-remove-file" class="mt-4 px-4 py-1.5 rounded-full border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 text-[10px] font-bold pointer-events-auto transition-all">
+                        Retirer le fichier
+                    </button>
+                </div>
+            </div>
+
+            <!-- Asynchronous Upload Progress Card (Hidden by default) -->
+            <div id="progress-card" class="hidden mt-6 glass-panel p-6 rounded-3xl border border-brand-primary/30 bg-gradient-to-br from-brand-primary/5 to-brand-secondary/5 relative overflow-hidden shadow-glow">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                        <span class="w-2.5 h-2.5 rounded-full bg-brand-primary animate-ping"></span>
+                        <h4 class="text-xs font-black uppercase tracking-wider text-white">Mise en ligne en cours...</h4>
+                    </div>
+                    <span id="progress-percent" class="text-base font-black text-white">0%</span>
+                </div>
+                
+                <!-- Glowing linear progress bar -->
+                <div class="w-full bg-brand-border/30 rounded-full h-2.5 overflow-hidden mb-4 border border-brand-border/20">
+                    <div id="progress-bar-fill" class="bg-gradient-to-r from-brand-primary via-pink-500 to-brand-secondary h-2.5 rounded-full shadow-glow transition-all duration-100" style="width: 0%;"></div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 text-[10px] font-bold text-brand-muted uppercase tracking-wider">
+                    <div>
+                        <span>Vitesse : </span>
+                        <span id="upload-speed" class="text-white">0.0 Mo/s</span>
+                    </div>
+                    <div class="text-right">
+                        <span>Restant : </span>
+                        <span id="upload-eta" class="text-white">Calcul en cours...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Video Metadata & Info (Flex: 1.2) -->
+        <div class="flex-[1.2] min-w-0 flex flex-col gap-6">
+            <div class="glass-panel p-6 md:p-8 rounded-3xl border border-brand-border/40 bg-brand-card/30 flex flex-col gap-5">
+                <h3 class="text-lg font-extrabold text-white border-l-4 border-brand-primary pl-4 tracking-tight">
+                    Informations Générales
+                </h3>
+
+                <!-- Title Field -->
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-brand-muted mb-2">Titre de la vidéo</label>
+                    <input 
+                        type="text" 
+                        name="title" 
+                        id="id_title" 
+                        required 
+                        placeholder="Entrez un titre accrocheur" 
+                        class="w-full bg-brand-text/5 border border-brand-border/40 focus:border-brand-primary rounded-xl px-4 py-3 text-brand-text text-xs outline-none transition-all placeholder-brand-text/30"
+                    >
+                    {% if form.title.errors %}
+                        <div class="text-red-500 text-[10px] font-bold mt-1">{{ form.title.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Description Field -->
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-brand-muted mb-2">Description</label>
+                    <textarea 
+                        name="description" 
+                        id="id_description" 
+                        rows="4" 
+                        required 
+                        placeholder="De quoi parle votre vidéo ? Ajoutez des hashtags..." 
+                        class="w-full bg-brand-text/5 border border-brand-border/40 focus:border-brand-primary rounded-xl p-4 text-brand-text text-xs outline-none transition-all placeholder-brand-text/30 min-h-[100px] resize-y"
+                    ></textarea>
+                    {% if form.description.errors %}
+                        <div class="text-red-500 text-[10px] font-bold mt-1">{{ form.description.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Category Field -->
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-brand-muted mb-2">Catégorie</label>
+                    <select 
+                        name="category" 
+                        id="id_category" 
+                        required 
+                        class="w-full bg-black/40 border border-brand-border/40 focus:border-brand-primary rounded-xl px-4 py-3 text-brand-text text-xs outline-none transition-all"
+                    >
+                        {% for x, y in form.fields.category.choices %}
+                            <option value="{{ x }}" class="bg-brand-bg text-white">{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Video Type Toggle: Is Short -->
+                <div class="flex items-center justify-between p-4 bg-brand-text/5 rounded-2xl border border-brand-border/20">
+                    <div>
+                        <h4 class="text-xs font-bold text-white">⚡ Format Short</h4>
+                        <p class="text-[10px] text-brand-muted mt-1 leading-tight">Vidéo verticale au format court (idéal mobile)</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="is_short" id="id_is_short" class="sr-only peer">
+                        <div class="w-11 h-6 bg-brand-border/40 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-brand-primary peer-checked:to-brand-secondary shadow-glow"></div>
+                    </label>
+                </div>
+
+                <div class="border-t border-brand-border/20 pt-5">
+                    <h3 class="text-base font-extrabold text-white tracking-tight mb-4">Lien externe alternatif</h3>
+                    <p class="text-[10px] text-brand-muted leading-tight mb-4">Si vous ne souhaitez pas téléverser un fichier local, vous pouvez intégrer un lien existant.</p>
+                    
+                    <!-- Embed URL Field -->
+                    <div class="mb-4">
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-brand-muted mb-2">URL d'intégration</label>
+                        <input 
+                            type="url" 
+                            name="embed_url" 
+                            id="id_embed_url" 
+                            placeholder="Exemple: https://www.youtube.com/watch?v=..." 
+                            class="w-full bg-brand-text/5 border border-brand-border/40 focus:border-brand-primary rounded-xl px-4 py-3 text-brand-text text-xs outline-none transition-all placeholder-brand-text/30"
+                        >
+                    </div>
+
+                    <!-- External Thumbnail Link -->
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-brand-muted mb-2">URL Miniature / Affiche</label>
+                        <input 
+                            type="url" 
+                            name="thumbnail" 
+                            id="id_thumbnail" 
+                            placeholder="Lien optionnel vers l'image de couverture" 
+                            class="w-full bg-brand-text/5 border border-brand-border/40 focus:border-brand-primary rounded-xl px-4 py-3 text-brand-text text-xs outline-none transition-all placeholder-brand-text/30"
+                        >
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-brand-border/20">
+                    <button 
+                        type="submit" 
+                        id="btn-submit-upload"
+                        class="w-full text-center py-4 rounded-full bg-gradient-to-r from-brand-primary to-brand-secondary text-white font-extrabold text-xs active:scale-95 transition-all shadow-glow hover:shadow-[0_0_25px_rgba(230,0,126,0.5)] flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                        <i class="fa-solid fa-rocket"></i> Publier la vidéo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
 </div>
 
-<style>
-    .form-control {
-        width: 100%;
-        padding: 12px 15px;
-        border: 1px solid #ddd;
-        border-radius: 10px;
-        font-family: inherit;
-        font-size: 1rem;
-        outline: none;
-        transition: border-color 0.3s;
+<!-- Upload Drag-and-Drop + Progress Script -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const fileInput = document.getElementById('id_video_file');
+    const form = document.getElementById('premium-upload-form');
+    const dropzoneDefault = document.getElementById('dropzone-default');
+    const dropzoneSelected = document.getElementById('dropzone-selected');
+    const selectedFileName = document.getElementById('selected-file-name');
+    const selectedFileSize = document.getElementById('selected-file-size');
+    const btnRemoveFile = document.getElementById('btn-remove-file');
+    
+    const progressCard = document.getElementById('progress-card');
+    const progressBarFill = document.getElementById('progress-bar-fill');
+    const progressPercent = document.getElementById('progress-percent');
+    const uploadSpeed = document.getElementById('upload-speed');
+    const uploadEta = document.getElementById('upload-eta');
+    const btnSubmit = document.getElementById('btn-submit-upload');
+
+    // Drag-over styling
+    const dropzoneContainer = dropzoneDefault.parentElement;
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropzoneContainer.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzoneContainer.classList.add('border-brand-primary', 'shadow-glow');
+            dropzoneContainer.style.borderColor = 'var(--primary)';
+        }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropzoneContainer.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzoneContainer.classList.remove('border-brand-primary', 'shadow-glow');
+            dropzoneContainer.style.borderColor = '';
+        }, false);
+    });
+
+    // Handle dropped files
+    dropzoneContainer.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            handleFileSelection(files[0]);
+        }
+    });
+
+    // Handle standard file selection
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length > 0) {
+            handleFileSelection(fileInput.files[0]);
+        }
+    });
+
+    function handleFileSelection(file) {
+        if (file) {
+            selectedFileName.textContent = file.name;
+            const sizeInMB = file.size / (1024 * 1024);
+            selectedFileSize.textContent = sizeInMB.toFixed(2) + ' Mo';
+            
+            dropzoneDefault.classList.add('hidden');
+            dropzoneDefault.classList.remove('flex');
+            dropzoneSelected.classList.remove('hidden');
+            dropzoneSelected.classList.add('flex');
+        }
     }
-    .form-control:focus {
-        border-color: var(--primary);
+
+    btnRemoveFile.addEventListener('click', (e) => {
+        e.preventDefault();
+        fileInput.value = '';
+        dropzoneSelected.classList.add('hidden');
+        dropzoneSelected.classList.remove('flex');
+        dropzoneDefault.classList.remove('hidden');
+        dropzoneDefault.classList.add('flex');
+    });
+
+    // Form submit AJAX processing
+    form.addEventListener('submit', (e) => {
+        // Only run AJAX if a file is actually chosen to be uploaded
+        if (!fileInput.files || fileInput.files.length === 0) {
+            return; // Normal form submission for embed link
+        }
+
+        e.preventDefault();
+
+        const file = fileInput.files[0];
+        const formData = new FormData(form);
+
+        // UI transitions
+        btnSubmit.disabled = true;
+        btnSubmit.classList.add('opacity-55', 'cursor-not-allowed');
+        progressCard.classList.remove('hidden');
+        progressCard.classList.add('block');
+
+        // Create XMLHTTPRequest
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', form.action || window.location.href, true);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+        const startTime = Date.now();
+
+        // Monitor upload speed & percent
+        xhr.upload.onprogress = function(e) {
+            if (e.lengthComputable) {
+                const percent = Math.round((e.loaded / e.total) * 100);
+                progressBarFill.style.width = percent + '%';
+                progressPercent.textContent = percent + '%';
+
+                // Speed and ETA math
+                const elapsedSeconds = (Date.now() - startTime) / 1000;
+                if (elapsedSeconds > 0) {
+                    const bytesPerSecond = e.loaded / elapsedSeconds;
+                    const speedInMB = bytesPerSecond / (1024 * 1024);
+                    uploadSpeed.textContent = speedInMB.toFixed(2) + ' Mo/s';
+
+                    const remainingBytes = e.total - e.loaded;
+                    const etaSeconds = Math.round(remainingBytes / bytesPerSecond);
+                    
+                    if (etaSeconds > 60) {
+                        const mins = Math.floor(etaSeconds / 60);
+                        const secs = etaSeconds % 60;
+                        uploadEta.textContent = `${mins}m ${secs}s`;
+                    } else {
+                        uploadEta.textContent = `${etaSeconds}s`;
+                    }
+                }
+            }
+        };
+
+        xhr.onload = function() {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.status === 'success' || response.redirect_url) {
+                        showPremiumToast("🚀 Succès !", "Votre vidéo est en ligne ! Début de l'encodage Celery.");
+                        setTimeout(() => {
+                            window.location.href = response.redirect_url || '/';
+                        }, 2000);
+                    } else {
+                        throw new Error(response.error || "Une erreur est survenue.");
+                    }
+                } catch(err) {
+                    showPremiumToast("❌ Erreur", err.message || "Impossible d'uploader.");
+                    resetSubmitButton();
+                }
+            } else {
+                showPremiumToast("❌ Erreur serveur", "Erreur lors du traitement.");
+                resetSubmitButton();
+            }
+        };
+
+        xhr.onerror = function() {
+            showPremiumToast("❌ Erreur réseau", "La connexion a été perdue.");
+            resetSubmitButton();
+        };
+
+        xhr.send(formData);
+    });
+
+    function resetSubmitButton() {
+        btnSubmit.disabled = false;
+        btnSubmit.classList.remove('opacity-55', 'cursor-not-allowed');
+        progressCard.classList.add('hidden');
+        progressCard.classList.remove('block');
     }
-</style>
+});
+</script>
 {% endblock %}

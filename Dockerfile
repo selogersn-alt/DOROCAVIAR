@@ -45,6 +45,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libwebp7 \
     zlib1g \
     curl \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # Copier les packages python construits dans l'etape builder

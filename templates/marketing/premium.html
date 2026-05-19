@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Devenir VIP Pro - DORO CAVIAR{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-12 px-4 md:px-8 text-center">
+    <!-- En-tête premium -->
+    <div class="relative inline-block mb-4">
+        <span class="absolute inset-0 bg-brand-primary opacity-30 blur-2xl rounded-full"></span>
+        <div class="relative z-10 w-24 h-24 bg-gradient-to-tr from-amber-400 to-amber-600 rounded-full flex items-center justify-center mx-auto shadow-[0_0_40px_rgba(245,158,11,0.5)] animate-bounce">
+            <i class="fa-solid fa-gem text-4xl text-white"></i>
+        </div>
+    </div>
+    
+    <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-4">
+        Rejoignez le club <span class="bg-gradient-to-r from-amber-400 via-pink-500 to-brand-primary bg-clip-text text-transparent" style="text-shadow: 0 0 30px rgba(236,72,153,0.2);">VIP DORO CAVIAR</span>
+    </h1>
+    <p class="text-brand-muted max-w-xl mx-auto text-base md:text-lg mb-12">
+        Débloquez une expérience de streaming ultime sans limites, soutenez vos créateurs préférés et dites adieu aux publicités.
+    </p>
+
+    <!-- Grille de fonctionnalités comparatives -->
+    <div class="grid md:grid-cols-2 gap-8 mb-12 text-left">
+        <!-- Plan Standard Gratuit -->
+        <div class="glass-panel p-8 rounded-3xl border border-brand-border/40 bg-brand-card/30 relative overflow-hidden flex flex-col justify-between">
+            <div>
+                <h3 class="text-xl font-bold text-brand-text mb-2">Membre Standard</h3>
+                <p class="text-brand-muted text-xs mb-6">Accès de base au streaming vidéo</p>
+                <div class="text-3xl font-black text-white mb-6">0 € <span class="text-xs text-brand-muted font-normal">/ à vie</span></div>
+                
+                <ul class="space-y-4 mb-8">
+                    <li class="flex items-center gap-3 text-xs text-brand-muted">
+                        <i class="fa-solid fa-check text-green-500"></i>
+                        <span>Lecture vidéo HD standard</span>
+                    </li>
+                    <li class="flex items-center gap-3 text-xs text-brand-muted">
+                        <i class="fa-solid fa-xmark text-red-500 w-4"></i>
+                        <span class="line-through">Publicités avant les vidéos</span>
+                    </li>
+                    <li class="flex items-center gap-3 text-xs text-brand-muted">
+                        <i class="fa-solid fa-xmark text-red-500 w-4"></i>
+                        <span class="line-through">Bannières publicitaires interactives</span>
+                    </li>
+                    <li class="flex items-center gap-3 text-xs text-brand-muted">
+                        <i class="fa-solid fa-xmark text-red-500 w-4"></i>
+                        <span class="line-through">Badge Premium sur votre profil</span>
+                    </li>
+                </ul>
+            </div>
+            <span class="w-full text-center py-3 rounded-full bg-brand-border/40 text-brand-muted font-bold text-xs cursor-default">
+                Plan Actuel
+            </span>
+        </div>
+
+        <!-- Plan Premium VIP Pro -->
+        <div class="glass-panel p-8 rounded-3xl border-2 border-brand-primary bg-gradient-to-b from-brand-primary/10 to-brand-card/50 relative overflow-hidden flex flex-col justify-between shadow-[0_0_40px_rgba(230,0,126,0.15)]">
+            <div class="absolute -top-3 -right-16 bg-brand-primary text-white font-extrabold text-[9px] uppercase tracking-widest py-2 px-16 rotate-45">
+                Recommandé
+            </div>
+            <div>
+                <h3 class="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                    Membre VIP Pro 
+                    <span class="text-[9px] uppercase tracking-wider bg-gradient-to-r from-amber-400 to-amber-600 text-white px-2 py-0.5 rounded font-black">PRO</span>
+                </h3>
+                <p class="text-brand-muted text-xs mb-6">L'expérience premium complète</p>
+                <div class="text-3xl font-black text-white mb-6">9.99 € <span class="text-xs text-brand-muted font-normal">/ paiement unique</span></div>
+                
+                <ul class="space-y-4 mb-8">
+                    <li class="flex items-center gap-3 text-xs text-brand-text">
+                        <i class="fa-solid fa-check text-brand-primary text-sm"></i>
+                        <span class="font-bold">ZÉRO Publicités & ZÉRO Ghost Clicks</span>
+                    </li>
+                    <li class="flex items-center gap-3 text-xs text-brand-text">
+                        <i class="fa-solid fa-check text-brand-primary text-sm"></i>
+                        <span>Accès prioritaire à toutes les nouveautés</span>
+                    </li>
+                    <li class="flex items-center gap-3 text-xs text-brand-text">
+                        <i class="fa-solid fa-check text-brand-primary text-sm"></i>
+                        <span>Support client VIP 24/7 ultra-rapide</span>
+                    </li>
+                    <li class="flex items-center gap-3 text-xs text-brand-text">
+                        <i class="fa-solid fa-check text-brand-primary text-sm"></i>
+                        <span class="font-bold text-amber-400">Badge VIP doré unique sur vos commentaires</span>
+                    </li>
+                </ul>
+            </div>
+            
+            {% if user.is_pro %}
+                <span class="w-full text-center py-3 rounded-full bg-green-500/20 text-green-400 font-extrabold text-xs cursor-default flex items-center justify-center gap-1.5 border border-green-500/30">
+                    <i class="fa-solid fa-circle-check"></i> Déjà Membre VIP Pro
+                </span>
+            {% else %}
+                <a 
+                    href="{% url 'premium_checkout' %}"
+                    class="w-full text-center py-3.5 rounded-full bg-gradient-to-r from-brand-primary via-pink-500 to-brand-secondary text-white font-extrabold text-xs active:scale-95 transition-all shadow-glow hover:shadow-[0_0_30px_rgba(230,0,126,0.6)] flex items-center justify-center gap-2"
+                >
+                    <i class="fa-solid fa-credit-card"></i> Passer au statut VIP Pro
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

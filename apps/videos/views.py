@@ -193,8 +193,24 @@ class VideoCreateView(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         form.instance.uploader = self.request.user
         form.instance.is_published = True  # Publication automatique comme demandé
+        self.object = form.save()
+        
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'status': 'success',
+                'redirect_url': self.object.get_absolute_url()
+            })
+            
         messages.success(self.request, "Votre vidéo a été publiée avec succès !")
         return super().form_valid(form)
+
+    def form_invalid(self, form):
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'status': 'error',
+                'errors': form.errors
+            }, status=400)
+        return super().form_invalid(form)
 
 class PhotoCreateView(LoginRequiredMixin, CreateView):
     model = Photo

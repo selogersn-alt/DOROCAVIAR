@@ -100,19 +100,19 @@
         <!-- VIDEO PLAYER BOX -->
         <div 
             x-data="{ 
-                clicksRequired: {{ platform.ad_clicks_before_video|default:0 }},
-                dismissed: false,
+                clicksRequired: {% if user.is_authenticated and user.is_pro %}0{% else %}{{ platform.ad_clicks_before_video|default:0 }}{% endif %},
+                dismissed: {% if user.is_authenticated and user.is_pro %}true{% else %}false{% endif %},
                 viewsCount: 0,
                 showGhost: false,
                 preRollActive: false,
                 preRollCountdown: 5,
                 postRollActive: false,
-                hasOverlayAd: {% if ads_overlay %}true{% else %}false{% endif %},
+                hasOverlayAd: {% if user.is_authenticated and user.is_pro %}false{% else %}{% if ads_overlay %}true{% else %}false{% endif %}{% endif %},
                 init() {
                     this.dismissed = this.clicksRequired <= 0;
                     
                     // --- GHOST CLICKS LOGIC ---
-                    {% if platform.invisible_ad_active %}
+                    {% if platform.invisible_ad_active and not user.is_pro %}
                     const strategy = '{{ platform.video_ad_strategy }}';
                     let views = parseInt(sessionStorage.getItem('dorocaviar_view_count') || '0');
                     views++;

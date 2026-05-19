@@ -6,6 +6,7 @@ from .views import (
     chat_poll_view, notification_count_view, FollowUserView, notification_list_view,
     FriendsListView
 )
+from .views_sse import sse_notifications_stream
 
 urlpatterns = [
     path('signup/', register_view, name='signup'),
@@ -18,6 +19,7 @@ urlpatterns = [
     path('friends/', FriendsListView.as_view(), name='friends_list'),
     
     # Messagerie & Notifications
+    path('sse/', sse_notifications_stream, name='sse_stream'),
     path('messages/', ChatListView.as_view(), name='chat_list'),
     path('notifications/', notification_list_view, name='notifications'),
     path('notifications/count/', notification_count_view, name='notification_count'),
