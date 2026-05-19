@@ -28,10 +28,10 @@ sitemaps = {
 }
 
 urlpatterns = [
+    path('', include('apps.marketing.urls')),
     path('admin/', admin.site.urls),
     path('robots.txt', robots_txt_view, name='robots_txt'),
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
-    path('', include('apps.marketing.urls')),
     path('accounts/', include('apps.users.urls')),
     path('blog/', include('apps.blog.urls', namespace='blog')),
     path('', include('apps.videos.urls')),
