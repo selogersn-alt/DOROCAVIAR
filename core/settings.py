@@ -103,6 +103,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -177,36 +178,41 @@ STATIC_URL = env('STATIC_URL', default='static/')
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# MEDIA Configuration - Ready for CDN / Support Bunny.net Storage & CDN in Production
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    }
+}
+
+if not DEBUG:
+    STORAGES["staticfiles"] = {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    }
+
+WHITENOISE_MANIFEST_STRICT = False
+
 USE_BUNNY = env.bool('USE_BUNNY', default=False)
 if USE_BUNNY:
-    # Bunny.net S3-compatible credentials
     AWS_ACCESS_KEY_ID = env('BUNNY_STORAGE_ZONE_NAME')
     AWS_SECRET_ACCESS_KEY = env('BUNNY_STORAGE_PASSWORD')
     AWS_STORAGE_BUCKET_NAME = env('BUNNY_STORAGE_ZONE_NAME')
     
-    # Endpoint Bunny S3 (ex: https://storage.bunnycdn.com)
     AWS_S3_ENDPOINT_URL = env('BUNNY_STORAGE_ENDPOINT', default='https://storage.bunnycdn.com')
     
-    # Nom de domaine de votre Pull Zone BunnyCDN
     AWS_S3_CUSTOM_DOMAIN = env('BUNNY_CDN_DOMAIN')
     
     AWS_DEFAULT_ACL = 'public-read'
     AWS_QUERYSTRING_AUTH = False
     AWS_S3_FILE_OVERWRITE = False
     
-    # Media Storage
-    STORAGES = {
-        "default": {
-            "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
-        },
-        "staticfiles": {
-            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-        }
+    STORAGES["default"] = {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
     }
     MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
     
-    # Optionnel: Servir aussi les fichiers statiques via BunnyCDN
     USE_BUNNY_STATIC = env.bool('USE_BUNNY_STATIC', default=False)
     if USE_BUNNY_STATIC:
         STORAGES["staticfiles"] = {
@@ -217,7 +223,7 @@ else:
     MEDIA_URL = env('MEDIA_URL', default='media/')
     MEDIA_ROOT = BASE_DIR / 'media'
 
-# Authentication
+
 AUTH_USER_MODEL = 'users.User'
 
 # Celery & Redis
