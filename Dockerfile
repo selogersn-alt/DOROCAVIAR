@@ -1,15 +1,15 @@
 # ==============================================================================
-# STAGE 1 : BUILDER (Compilation des dépendances)
+# STAGE 1 : BUILDER (Compilation des dependances)
 # ==============================================================================
 FROM python:3.13-slim AS builder
 
 WORKDIR /app
 
-# Désactiver la mise en cache de pip et l'écriture des fichiers pyc
+# Desactiver la mise en cache de pip et l'ecriture des fichiers pyc
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# Installer les dépendances système requises pour compiler psycopg2 et pillow
+# Installer les dependances systeme requises pour compiler psycopg2 et pillow
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
@@ -18,12 +18,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Creer un environnement virtuel
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
 # Copier requirements.txt et construire les wheel files
 COPY requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # ==============================================================================
-# STAGE 2 : RUNTIME (Image finale légère de production)
+# STAGE 2 : RUNTIME (Image finale legere de production)
 # ==============================================================================
 FROM python:3.13-slim AS runtime
 
@@ -31,9 +35,10 @@ WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PORT=8000
+    PORT=8000 \
+    PATH="/opt/venv/bin:$PATH"
 
-# Installer les dépendances d'exécution système (libpq pour PostgreSQL, etc.)
+# Installer les dependances d'execution systeme (libpq pour PostgreSQL, etc.)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     libjpeg62-turbo \
@@ -42,22 +47,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copier les packages python construits dans l'étape builder
-COPY --from=builder /root/.local /root/.local
-ENV PATH=/root/.local/bin:$PATH
+# Copier les packages python construits dans l'etape builder
+COPY --from=builder /opt/venv /opt/venv
 
-# Copier l'intégralité du code de l'application
+# Copier l'integralite du code de l'application
 COPY . .
 
-# Créer les dossiers de stockage locaux par défaut
+# Creer les dossiers de stockage locaux par defaut
 RUN mkdir -p /app/staticfiles /app/media
 
-# Créer un utilisateur non-privilégié pour la sécurité du conteneur
-RUN useradd -u 8888 appuser && chown -R appuser:appuser /app
+# Creer un utilisateur non-privilegie pour la securite du conteneur
+RUN useradd -u 8888 appuser && chown -R appuser:appuser /app /opt/venv
 USER appuser
 
 # Exposer le port de Gunicorn
 EXPOSE 8000
 
-# Commande par défaut (lancement de l'application Django via Gunicorn)
+# Commande par defaut (lancement de l'application Django via Gunicorn)
 CMD ["gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "120"]
