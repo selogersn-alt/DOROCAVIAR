@@ -341,8 +341,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     showPremiumToast("❌ Erreur", err.message || "Impossible d'uploader.");
                     resetSubmitButton();
                 }
+            } else if (xhr.status === 400) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.errors) {
+                        let errorMsg = "";
+                        for (const field in response.errors) {
+                            // Si c'est une liste d'erreurs
+                            const errs = response.errors[field];
+                            const formattedField = field === '__all__' ? 'Formulaire' : field.charAt(0).toUpperCase() + field.slice(1);
+                            errorMsg += `${formattedField} : ${Array.isArray(errs) ? errs.join(', ') : errs}\n`;
+                        }
+                        showPremiumToast("❌ Erreur de validation", errorMsg);
+                    } else if (response.error) {
+                        showPremiumToast("❌ Erreur de validation", response.error);
+                    } else {
+                        showPremiumToast("❌ Erreur", "Veuillez vérifier les informations saisies.");
+                    }
+                } catch(e) {
+                    showPremiumToast("❌ Erreur de validation", "Veuillez vérifier les informations du formulaire.");
+                }
+                resetSubmitButton();
             } else {
-                showPremiumToast("❌ Erreur serveur", "Erreur lors du traitement.");
+                showPremiumToast("❌ Erreur serveur", "Erreur lors du traitement (Code " + xhr.status + ").");
                 resetSubmitButton();
             }
         };

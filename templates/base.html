@@ -1002,59 +1002,64 @@
                 });
             }
 
-            // 4. Écoute du flux Server-Sent Events (SSE) temps réel
+            // 4. Écoute via AJAX Polling haute performance (non-bloquant pour Gunicorn)
             {% if user.is_authenticated %}
             (function() {
-                let sseSource = new EventSource("{% url 'sse_stream' %}");
-                
-                sseSource.onmessage = function(event) {
-                    try {
-                        const data = JSON.parse(event.data);
-                        console.log("SSE reçu :", data);
-                        
-                        if (data.type === 'INIT' || data.type === 'UPDATE') {
-                            const total = data.notifications_count + data.messages_count;
-                            const sseEvent = new CustomEvent('sse-notification', { 
-                                detail: { 
-                                    notifications_count: data.notifications_count,
-                                    messages_count: data.messages_count,
-                                    total: total
-                                } 
-                            });
-                            window.dispatchEvent(sseEvent);
-                            
-                            if (data.type === 'UPDATE') {
-                                if (data.notification) {
-                                    showPremiumToast(
-                                        `🔔 ${data.notification.sender}`, 
-                                        data.notification.text
-                                    );
-                                    const notifContainer = document.getElementById('notifications-container');
-                                    if (notifContainer) {
-                                        htmx.trigger(notifContainer, 'sse-refresh');
-                                    }
-                                }
+                let lastCheckedNotifId = null;
+                let lastCheckedMsgId = null;
+                let isFirstRun = true;
+
+                function checkNotifications() {
+                    const url = "{% url 'sse_stream' %}?last_notif_id=" + (lastCheckedNotifId || '') + "&last_msg_id=" + (lastCheckedMsgId || '');
+                    fetch(url)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                const total = data.notifications_count + data.messages_count;
+                                const sseEvent = new CustomEvent('sse-notification', { 
+                                    detail: { 
+                                        notifications_count: data.notifications_count,
+                                        messages_count: data.messages_count,
+                                        total: total
+                                    } 
+                                });
+                                window.dispatchEvent(sseEvent);
                                 
-                                if (data.message) {
-                                    showPremiumToast(
-                                        `💬 ${data.message.sender}`, 
-                                        data.message.content || "Image reçue 📷"
-                                    );
-                                    const chatContainer = document.getElementById('chat-messages-container');
-                                    if (chatContainer) {
-                                        htmx.trigger(chatContainer, 'sse-refresh');
+                                if (!isFirstRun && data.has_update) {
+                                    if (data.notification) {
+                                        showPremiumToast(
+                                            `🔔 ${data.notification.sender}`, 
+                                            data.notification.text
+                                        );
+                                        const notifContainer = document.getElementById('notifications-container');
+                                        if (notifContainer) {
+                                            htmx.trigger(notifContainer, 'sse-refresh');
+                                        }
+                                    }
+                                    
+                                    if (data.message) {
+                                        showPremiumToast(
+                                            `💬 ${data.message.sender}`, 
+                                            data.message.content || "Image reçue 📷"
+                                        );
+                                        const chatContainer = document.getElementById('chat-messages-container');
+                                        if (chatContainer) {
+                                            htmx.trigger(chatContainer, 'sse-refresh');
+                                        }
                                     }
                                 }
+
+                                lastCheckedNotifId = data.last_notif_id;
+                                lastCheckedMsgId = data.last_msg_id;
+                                isFirstRun = false;
                             }
-                        }
-                    } catch (err) {
-                        console.error("Erreur de parsing SSE :", err);
-                    }
-                };
-                
-                sseSource.onerror = function() {
-                    console.log("Connexion SSE fermée, reconnexion automatique en cours...");
-                };
+                        })
+                        .catch(err => console.error("Erreur polling notifications:", err));
+                }
+
+                // Lancement immédiat puis toutes les 15 secondes
+                checkNotifications();
+                setInterval(checkNotifications, 15000);
             })();
             {% endif %}
         });

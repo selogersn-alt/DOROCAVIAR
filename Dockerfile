@@ -65,4 +65,4 @@ USER appuser
 EXPOSE 8000
 
 # Commande par defaut (lancement de l'application Django via Gunicorn)
-CMD ["gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "120"]
+CMD ["gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "600"]
