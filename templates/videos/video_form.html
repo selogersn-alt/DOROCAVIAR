@@ -102,7 +102,7 @@
                         id="id_title" 
                         required 
                         placeholder="Entrez un titre accrocheur" 
-                        class="w-full bg-brand-text/5 border border-brand-border/40 focus:border-brand-primary rounded-xl px-4 py-3 text-brand-text text-xs outline-none transition-all placeholder-brand-text/30"
+                        class="w-full bg-black/40 border border-brand-border/40 focus:border-brand-primary rounded-xl px-4 py-3 text-white text-sm outline-none transition-all placeholder-brand-text/30"
                     >
                     {% if form.title.errors %}
                         <div class="text-red-500 text-[10px] font-bold mt-1">{{ form.title.errors }}</div>
@@ -118,7 +118,7 @@
                         rows="4" 
                         required 
                         placeholder="De quoi parle votre vidéo ? Ajoutez des hashtags..." 
-                        class="w-full bg-brand-text/5 border border-brand-border/40 focus:border-brand-primary rounded-xl p-4 text-brand-text text-xs outline-none transition-all placeholder-brand-text/30 min-h-[100px] resize-y"
+                        class="w-full bg-black/40 border border-brand-border/40 focus:border-brand-primary rounded-xl p-4 text-white text-sm outline-none transition-all placeholder-brand-text/30 min-h-[100px] resize-y"
                     ></textarea>
                     {% if form.description.errors %}
                         <div class="text-red-500 text-[10px] font-bold mt-1">{{ form.description.errors }}</div>
@@ -132,7 +132,7 @@
                         name="category" 
                         id="id_category" 
                         required 
-                        class="w-full bg-black/40 border border-brand-border/40 focus:border-brand-primary rounded-xl px-4 py-3 text-brand-text text-xs outline-none transition-all"
+                        class="w-full bg-black/40 border border-brand-border/40 focus:border-brand-primary rounded-xl px-4 py-3 text-white text-sm outline-none transition-all"
                     >
                         {% for x, y in form.fields.category.choices %}
                             <option value="{{ x }}" class="bg-brand-bg text-white">{{ y }}</option>
@@ -164,7 +164,7 @@
                             name="embed_url" 
                             id="id_embed_url" 
                             placeholder="Exemple: https://www.youtube.com/watch?v=..." 
-                            class="w-full bg-brand-text/5 border border-brand-border/40 focus:border-brand-primary rounded-xl px-4 py-3 text-brand-text text-xs outline-none transition-all placeholder-brand-text/30"
+                            class="w-full bg-black/40 border border-brand-border/40 focus:border-brand-primary rounded-xl px-4 py-3 text-white text-sm outline-none transition-all placeholder-brand-text/30"
                         >
                     </div>
 
@@ -176,7 +176,7 @@
                             name="thumbnail" 
                             id="id_thumbnail" 
                             placeholder="Lien optionnel vers l'image de couverture" 
-                            class="w-full bg-brand-text/5 border border-brand-border/40 focus:border-brand-primary rounded-xl px-4 py-3 text-brand-text text-xs outline-none transition-all placeholder-brand-text/30"
+                            class="w-full bg-black/40 border border-brand-border/40 focus:border-brand-primary rounded-xl px-4 py-3 text-white text-sm outline-none transition-all placeholder-brand-text/30"
                         >
                     </div>
                 </div>

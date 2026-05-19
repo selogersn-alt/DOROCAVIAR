@@ -96,6 +96,10 @@ class Video(models.Model):
                     if video_id.isdigit():
                         self.embed_url = f"https://player.vimeo.com/video/{video_id}"
                     
+        # Mettre à jour l'URL textuelle de la miniature si on a une miniature sous forme de fichier local/distant
+        if self.thumbnail_file and (not self.thumbnail or self.thumbnail != self.thumbnail_file.url):
+            self.thumbnail = self.thumbnail_file.url
+
         super().save(*args, **kwargs)
 
 class Photo(models.Model):

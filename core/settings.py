@@ -219,14 +219,14 @@ if USE_BUNNY:
     AWS_S3_FILE_OVERWRITE = False
     
     STORAGES["default"] = {
-        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        "BACKEND": "apps.videos.storage.BunnyS3Boto3Storage",
     }
     MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
     
     USE_BUNNY_STATIC = env.bool('USE_BUNNY_STATIC', default=False)
     if USE_BUNNY_STATIC:
         STORAGES["staticfiles"] = {
-            "BACKEND": "storages.backends.s3boto3.S3StaticStorage",
+            "BACKEND": "apps.videos.storage.BunnyS3StaticStorage",
         }
         STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/static/"
 else:
