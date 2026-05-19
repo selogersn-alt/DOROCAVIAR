@@ -235,6 +235,8 @@ else:
 
 
 AUTH_USER_MODEL = 'users.User'
+LOGIN_REDIRECT_URL = 'dashboard'
+LOGOUT_REDIRECT_URL = 'home'
 
 # Celery & Redis
 CELERY_BROKER_URL = env('REDIS_URL', default='redis://localhost:6379/0')
