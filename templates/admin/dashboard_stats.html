@@ -1,0 +1,87 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}{{ block.super }}
+<style>
+    .stats-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .card { background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #eee; }
+    .card .value { font-size: 2rem; font-weight: bold; color: #E6007E; }
+    .card .label { font-size: 0.8rem; text-transform: uppercase; color: #888; letter-spacing: 1px; }
+    .table-card { background: white; border-radius: 10px; border: 1px solid #eee; overflow: hidden; }
+    .table-card h3 { padding: 1rem; margin: 0; background: #fdfdfd; border-bottom: 1px solid #eee; font-size: 1rem; }
+    .table-stats { width: 100%; border-collapse: collapse; }
+    .table-stats td, .table-stats th { padding: 10px 15px; text-align: left; border-bottom: 1px solid #f9f9f9; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <h1 style="color: #333;">Tableau de Bord Stratégique</h1>
+    <p style="color: #888;">Statistiques de croissance et monétisation en temps réel.</p>
+</div>
+
+<!-- TOP CARDS -->
+<div class="stats-container">
+    <div class="card">
+        <div class="label">Utilisateurs Totaux</div>
+        <div class="value">{{ total_users }}</div>
+        <div style="font-size: 0.8rem; color: #28a745;">+{{ new_users_today }} aujourd'hui</div>
+    </div>
+    <div class="card">
+        <div class="label">Vidéos publiées</div>
+        <div class="value">{{ total_videos }}</div>
+    </div>
+    <div class="card">
+        <div class="label">Vues Totales</div>
+        <div class="value" style="color: #333;">{{ total_views }}</div>
+    </div>
+    <div class="card">
+        <div class="label">Clics Ad / Affiliation</div>
+        <div class="value" style="color: #28a745;">{{ total_ad_clicks }}</div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+    <!-- Top Liens Affiliation -->
+    <div class="table-card">
+        <h3>Meilleurs Liens d'Affiliation</h3>
+        <table class="table-stats">
+            <thead>
+                <tr><th>Nom</th><th>Clics</th></tr>
+            </thead>
+            <tbody>
+                {% for link in top_affiliate_links %}
+                <tr><td>{{ link.name }}</td><td><strong>{{ link.clicks }}</strong></td></tr>
+                {% empty %}
+                <tr><td colspan="2" style="text-align: center; color: #999;">Aucune donnée</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Alertes Modération -->
+    <div class="table-card" style="border: 1px solid {% if pending_reports > 0 %}#E6007E{% else %}#eee{% endif %};">
+        <h3>Alertes de Modération</h3>
+        <div style="padding: 2rem; text-align: center;">
+            <div style="font-size: 3rem; font-weight: bold; color: {% if pending_reports > 0 %}red{% else %}#ccc{% endif %};">{{ pending_reports }}</div>
+            <p style="font-size: 0.9rem;">Signalements en attente de traitement.</p>
+            <a href="/admin/marketing/report/" style="background: black; color: white; padding: 5px 15px; border-radius: 5px; text-decoration: none;">Voir les signalements</a>
+        </div>
+    </div>
+</div>
+
+<div style="margin-top: 2rem;">
+    <div class="table-card">
+        <h3>Top Catégories par Volume</h3>
+        <table class="table-stats">
+            {% for cat in top_categories %}
+            <tr>
+                <td>{{ cat.category__name|default:"Sans catégorie" }}</td>
+                <td style="text-align: right;">{{ cat.count }} vidéos</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+
+{% endblock %}

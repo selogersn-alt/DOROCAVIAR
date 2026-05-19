@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Toutes les Catégories - Dorocaviar{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-end mb-5">
+        <div>
+            <h1 class="fw-bold text-white mb-2">Explorer par Thématiques</h1>
+            <p class="text-white-50 mb-0">Découvrez des contenus organisés pour vos centres d'intérêts.</p>
+        </div>
+        <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">{{ categories.count }} catégories</span>
+    </div>
+
+    <div class="row g-4">
+        {% for cat in categories %}
+        <div class="col-md-4 col-lg-3">
+            <a href="{% url 'category_detail' cat.slug %}" class="text-decoration-none">
+                <div class="glass h-100 rounded-4 overflow-hidden transition-transform hover-scale" style="border: 1px solid var(--glass-border);">
+                    <div style="height: 160px; background: linear-gradient(135deg, var(--primary), var(--secondary)); position: relative;">
+                        {% if cat.image %}
+                            <img src="{{ cat.image.url }}" class="w-100 h-100 object-fit-cover opacity-50">
+                        {% endif %}
+                        <div class="position-absolute bottom-0 start-0 p-3 w-100" style="background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);">
+                            <h5 class="text-white fw-bold mb-0">{{ cat.name }}</h5>
+                            <small class="text-white-50">{{ cat.videos.count }} vidéos</small>
+                        </div>
+                    </div>
+                    <div class="p-3">
+                        <p class="small text-white-50 mb-0">{{ cat.description|truncatewords:15|default:"Explorez cette thématique." }}</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <p class="text-white-50">Aucune catégorie disponible pour le moment.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .hover-scale { transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    .hover-scale:hover { transform: translateY(-10px); border-color: var(--primary) !important; }
+</style>
+{% endblock %}

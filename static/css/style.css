@@ -1,0 +1,38 @@
+:root {
+    --primary: #E6007E;
+    --primary-glow: rgba(230, 0, 126, 0.4);
+    --secondary: #9b59b6;
+    --bg-dark: #0f080c;
+    --bg-card: rgba(255, 255, 255, 0.03);
+    --text-main: #FFFFFF;
+    --text-muted: #d1d1d1;
+    --glass-border: rgba(230, 0, 126, 0.15);
+    --glass-bg: rgba(230, 0, 126, 0.05);
+    --shadow: 0 8px 32px 0 rgba(230, 0, 126, 0.1);
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.btn-primary, .btn-warning {
+    background: linear-gradient(135deg, var(--primary), var(--secondary)) !important;
+    border: none !important;
+    color: white !important;
+    box-shadow: 0 0 15px var(--primary-glow) !important;
+}
+
+.text-primary, .text-warning {
+    color: var(--primary) !important;
+}
+
+.logo span {
+    color: var(--primary) !important;
+}
+
+/* Éradication de l'orange Bootstrap */
+.bg-warning, .bg-primary {
+    background-color: var(--primary) !important;
+}

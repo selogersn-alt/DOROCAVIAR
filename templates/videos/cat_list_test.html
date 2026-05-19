@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Catégories - DORO CAVIAR{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <h1 class="text-white mb-4">Catégories</h1>
+    <div class="row g-4">
+        {% for cat in categories %}
+        <div class="col-md-3">
+            <div class="glass p-3 rounded-4">
+                <a href="{% url 'category_detail' cat.slug %}" class="text-warning text-decoration-none fw-bold">{{ cat.name }}</a>
+                <p class="small text-white-50 mt-2">{{ cat.videos.count }} vidéos</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

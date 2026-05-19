@@ -1,0 +1,109 @@
+# ==============================================================================
+# DIGITALOCEAN APP PLATFORM - SPÉCIFICATION DE DÉPLOIEMENT (app.yaml)
+# ==============================================================================
+# Ce fichier permet de déployer automatiquement l'ensemble de votre architecture
+# (Serveur Web, Celery Worker, Base PostgreSQL et cache Redis) sur DigitalOcean App Platform.
+# Pour le déployer : Importez votre dépôt GitHub sur DigitalOcean et utilisez ce fichier.
+
+name: dorocaviar-platform
+region: fra # Francfort (Allemagne) - Idéal pour l'Europe
+
+services:
+  # ----------------------------------------------------------------------------
+  # SERVICE WEB PRINCIPAL (DJANGO / GUNICORN)
+  # ----------------------------------------------------------------------------
+  - name: web
+    instance_count: 1
+    instance_size_slug: basic-xs # Idéal pour démarrer (5.00 $/mois)
+    
+    # Commande de construction (Migration + Collecte des fichiers statiques)
+    build_command: python manage.py migrate && python manage.py collectstatic --noinput
+    
+    # Commande de lancement en production via Gunicorn
+    run_command: gunicorn core.wsgi:application --bind 0.0.0.0:${PORT} --workers 3 --timeout 120
+    
+    dockerfile_path: Dockerfile
+    http_port: 8000
+    
+    routes:
+      - path: /
+      
+    # Variables d'environnement pour le service Web
+    envs:
+      - key: DEBUG
+        scope: RUN_AND_BUILD_TIME
+        value: "False"
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${db.DATABASE_URL}
+      - key: REDIS_URL
+        scope: RUN_TIME
+        value: ${redis.REDIS_URL}
+      - key: SECRET_KEY
+        scope: RUN_TIME
+        # Mettez votre propre clé secrète dans le tableau de bord DO (variable chiffrée)
+        value: "votre_cle_secrete_ultra_securisee"
+      - key: CSRF_TRUSTED_ORIGINS
+        scope: RUN_TIME
+        value: "https://votre-domaine.com,https://www.votre-domaine.com"
+      - key: ALLOWED_HOSTS
+        scope: RUN_TIME
+        value: "localhost,127.0.0.1,votre-domaine.com"
+      
+      # Configuration Bunny.net (À remplir sur le tableau de bord DigitalOcean)
+      - key: USE_BUNNY
+        scope: RUN_TIME
+        value: "True"
+      - key: BUNNY_STORAGE_ZONE_NAME
+        scope: RUN_TIME
+        value: "votre-storage-zone"
+      - key: BUNNY_STORAGE_PASSWORD
+        scope: RUN_TIME
+        value: "votre-storage-password"
+      - key: BUNNY_STORAGE_ENDPOINT
+        scope: RUN_TIME
+        value: "https://storage.bunnycdn.com"
+      - key: BUNNY_CDN_DOMAIN
+        scope: RUN_TIME
+        value: "votre-pull-zone.b-cdn.net"
+      - key: USE_BUNNY_STATIC
+        scope: RUN_TIME
+        value: "True"
+
+  # ----------------------------------------------------------------------------
+  # SERVICE BACKEND WORKER (CELERY)
+  # ----------------------------------------------------------------------------
+  - name: worker
+    instance_count: 1
+    instance_size_slug: basic-xs
+    run_command: celery -A core worker --loglevel=info
+    dockerfile_path: Dockerfile
+    envs:
+      - key: DEBUG
+        scope: RUN_TIME
+        value: "False"
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${db.DATABASE_URL}
+      - key: REDIS_URL
+        scope: RUN_TIME
+        value: ${redis.REDIS_URL}
+      - key: SECRET_KEY
+        scope: RUN_TIME
+        value: "votre_cle_secrete_ultra_securisee"
+
+# ------------------------------------------------------------------------------
+# COMPOSANTS DE BASE DE DONNÉES MANAGÉES
+# ------------------------------------------------------------------------------
+databases:
+  # Base de données PostgreSQL managée
+  - name: db
+    engine: PG
+    version: "15"
+    production: false # false = Dev database (7.00 $/mois), true = Prod HA DB
+    
+  # Instance Redis managée pour le cache et les sessions
+  - name: redis
+    engine: REDIS
+    version: "7"
+    production: false

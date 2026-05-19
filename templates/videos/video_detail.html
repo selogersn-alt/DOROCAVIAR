@@ -1,0 +1,869 @@
+{% extends "base.html" %}
+
+{% block title %}{{ video.title }} - DORO CAVIAR{% endblock %}
+{% block meta_description %}{{ video.meta_description|default:video.description|truncatewords:25 }}{% endblock %}
+
+{% block og_title %}{{ video.title }}{% endblock %}
+{% block og_description %}{{ video.description|truncatewords:30 }}{% endblock %}
+{% block og_image %}{{ video.thumbnail }}{% endblock %}
+
+{% block extra_body_attr %}data-category="{{ video.category.name }}"{% endblock %}
+
+{% block content %}
+<div 
+    x-data="{ 
+        showReportModal: false, 
+        showChatWidget: false, 
+        friendshipStatus: '{{ friendship_status }}', 
+        friendRequestId: '{{ friend_request_id|default:'' }}',
+        chatMessages: [],
+        chatInput: '',
+        loadChatHistory() {
+            fetch('/messages/{{ video.uploader.username }}/?ajax=true', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                this.chatMessages = data.messages;
+                setTimeout(() => {
+                    const el = document.getElementById('chat-scroll-container');
+                    if (el) el.scrollTop = el.scrollHeight;
+                }, 100);
+            });
+        },
+        sendChatMessage() {
+            if (!this.chatInput.trim()) return;
+            const formData = new FormData();
+            formData.append('content', this.chatInput);
+            
+            fetch('/messages/{{ video.uploader.username }}/', {
+                method: 'POST',
+                body: formData,
+                headers: { 
+                    'X-CSRFToken': '{{ csrf_token }}', 
+                    'X-Requested-With': 'XMLHttpRequest' 
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    this.chatMessages.push(data.message);
+                    this.chatInput = '';
+                    setTimeout(() => {
+                        const el = document.getElementById('chat-scroll-container');
+                        if (el) el.scrollTop = el.scrollHeight;
+                    }, 100);
+                }
+            });
+        },
+        initPoll() {
+            setInterval(() => {
+                if (this.showChatWidget && this.friendshipStatus === 'ACCEPTED') {
+                    const lastId = this.chatMessages.length > 0 ? this.chatMessages[this.chatMessages.length - 1].id : null;
+                    let url = '/messages/{{ video.uploader.username }}/poll/';
+                    if (lastId) url += '?last_id=' + lastId;
+                    
+                    fetch(url, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.messages && data.messages.length > 0) {
+                            this.chatMessages = [...this.chatMessages, ...data.messages];
+                            setTimeout(() => {
+                                const el = document.getElementById('chat-scroll-container');
+                                if (el) el.scrollTop = el.scrollHeight;
+                            }, 100);
+                        }
+                    });
+                }
+            }, 3000);
+        }
+    }" 
+    x-init="initPoll()"
+    class="flex flex-col lg:flex-row gap-8 mt-6"
+>
+    <!-- LEFT COLUMN: Main Video Area (Flex: 2) -->
+    <div class="flex-[2] min-w-0">
+        
+        <!-- Breadcrumbs -->
+        <nav class="flex items-center gap-2 mb-4 text-xs font-semibold text-brand-muted">
+            <a href="/" class="hover:text-brand-primary transition-colors">Accueil</a>
+            <span class="opacity-40">/</span>
+            {% if video.category %}
+                <a href="{% url 'category_detail' video.category.slug %}" class="hover:text-brand-primary transition-colors">{{ video.category.name }}</a>
+                <span class="opacity-40">/</span>
+            {% endif %}
+            <span class="text-brand-text truncate max-w-[200px]">{{ video.title }}</span>
+        </nav>
+
+        <!-- VIDEO PLAYER BOX -->
+        <div 
+            x-data="{ 
+                clicksRequired: {{ platform.ad_clicks_before_video|default:0 }},
+                dismissed: false,
+                viewsCount: 0,
+                showGhost: false,
+                preRollActive: false,
+                preRollCountdown: 5,
+                postRollActive: false,
+                hasOverlayAd: {% if ads_overlay %}true{% else %}false{% endif %},
+                init() {
+                    this.dismissed = this.clicksRequired <= 0;
+                    
+                    // --- GHOST CLICKS LOGIC ---
+                    {% if platform.invisible_ad_active %}
+                    const strategy = '{{ platform.video_ad_strategy }}';
+                    let views = parseInt(sessionStorage.getItem('dorocaviar_view_count') || '0');
+                    views++;
+                    sessionStorage.setItem('dorocaviar_view_count', views.toString());
+
+                    if (strategy === 'ALWAYS') {
+                        this.showGhost = true;
+                    } else if (strategy === 'EVERY_3' && views % 3 === 0) {
+                        this.showGhost = true;
+                    }
+                    {% endif %}
+
+                    // Si déjà débloqué, lancer le pré-roll immédiatement
+                    if (this.dismissed && this.hasOverlayAd) {
+                        this.startPreRollTimer();
+                    }
+
+                    // Watch pour lancer le pré-roll quand l'utilisateur finit de cliquer sur l'AdBlock requis
+                    this.$watch('dismissed', value => {
+                        if (value && this.hasOverlayAd) {
+                            this.startPreRollTimer();
+                        }
+                    });
+                },
+                startPreRollTimer() {
+                    this.preRollActive = true;
+                    this.preRollCountdown = 5;
+                    const interval = setInterval(() => {
+                        this.preRollCountdown--;
+                        if (this.preRollCountdown <= 0) {
+                            clearInterval(interval);
+                        }
+                    }, 1000);
+                }
+            }"
+            class="relative w-full aspect-video rounded-3xl overflow-hidden shadow-2xl bg-black border border-brand-border/40"
+        >
+            
+            <!-- Click-to-Play Required Ads (Ad Block overlay) -->
+            <div 
+                x-show="!dismissed"
+                @click="
+                    clicksRequired--;
+                    if (clicksRequired <= 0) {
+                        dismissed = true;
+                    }
+                "
+                class="absolute inset-0 z-20 bg-black/90 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 select-none"
+                style="display: none;"
+            >
+                <img src="{{ video.thumbnail }}" class="absolute inset-0 w-full h-full object-cover opacity-20 filter blur-md">
+                <div class="relative z-10 flex flex-col items-center text-center px-6">
+                    <div class="w-20 h-20 bg-gradient-to-tr from-brand-primary to-brand-secondary rounded-full flex items-center justify-center shadow-glow animate-pulse hover:scale-105 transition-transform duration-300">
+                        <svg class="w-8 h-8 text-white fill-current ml-1" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </div>
+                    <p class="mt-6 font-extrabold text-lg md:text-xl text-white tracking-tight">Cliquez pour lancer la vidéo</p>
+                    <small class="text-brand-muted text-xs mt-2 block">
+                        Soutenez la plateforme en effectuant <span class="text-brand-primary font-bold" x-text="clicksRequired"></span> clic(s) requis.
+                    </small>
+                </div>
+            </div>
+
+            <!-- Ghost Ad Layer (Invisible clicks) -->
+            <div 
+                x-show="showGhost && dismissed"
+                @click="
+                    setTimeout(() => showGhost = false, 500);
+                "
+                class="absolute inset-0 z-30 cursor-pointer"
+                style="display: none;"
+            >
+                {% if video.category.affiliate_link %}
+                    <a href="{{ video.category.affiliate_link }}" target="_blank" class="block w-full h-full"></a>
+                {% elif platform.invisible_ad_link %}
+                    <a href="{{ platform.invisible_ad_link }}" target="_blank" class="block w-full h-full"></a>
+                {% endif %}
+            </div>
+
+            <!-- Real Embed Frame / Video File -->
+            {% if video.video_file %}
+                <video 
+                    x-ref="videoPlayer"
+                    @ended="postRollActive = true"
+                    controls 
+                    class="absolute inset-0 w-full h-full object-contain"
+                    :style="!dismissed || preRollActive ? 'pointer-events: none;' : ''"
+                >
+                    <source src="{{ video.video_file.url }}" type="video/mp4">
+                    Votre navigateur ne supporte pas la lecture de vidéos.
+                </video>
+            {% else %}
+                {% if "<iframe" in video.embed_url|lower or "<embed" in video.embed_url|lower or "<object" in video.embed_url|lower %}
+                    <div 
+                        class="absolute inset-0 w-full h-full [&_iframe]:absolute [&_iframe]:inset-0 [&_iframe]:w-full [&_iframe]:h-full [&_iframe]:border-0"
+                        :class="!dismissed || preRollActive ? 'pointer-events-none' : ''"
+                    >
+                        {{ video.embed_url|safe }}
+                    </div>
+                {% else %}
+                    <iframe 
+                        id="real-player"
+                        src="{{ video.embed_url }}" 
+                        class="absolute inset-0 w-full h-full border-0" 
+                        :class="!dismissed || preRollActive ? 'pointer-events-none' : ''"
+                        referrerpolicy="strict-origin-when-cross-origin"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen
+                    ></iframe>
+                {% endif %}
+            {% endif %}
+
+            <!-- Quality Settings Dropdown -->
+            <div 
+                x-data="{ open: false, currentQuality: 'Auto' }" 
+                x-show="dismissed && !preRollActive && !postRollActive"
+                class="absolute top-4 right-4 z-30"
+                style="display: none;"
+            >
+                <button 
+                    @click="open = !open" 
+                    class="w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 border border-brand-border/30 text-white flex items-center justify-center transition-all duration-300 hover:rotate-45"
+                    title="Paramètres de qualité"
+                >
+                    <i class="fa-solid fa-gear text-sm"></i>
+                </button>
+                <div 
+                    x-show="open" 
+                    @click.outside="open = false"
+                    class="absolute right-0 mt-2 w-32 bg-black/90 border border-brand-border/40 rounded-xl p-1.5 shadow-2xl backdrop-blur-md select-none"
+                    style="display: none;"
+                >
+                    <template x-for="q in ['Auto', '1080p', '720p', '480p']">
+                        <button 
+                            @click="currentQuality = q; open = false;" 
+                            class="w-full text-left px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center justify-between"
+                            :class="currentQuality === q ? 'bg-brand-primary text-white' : 'text-brand-muted hover:text-white hover:bg-white/5'"
+                        >
+                            <span x-text="q"></span>
+                            <i x-show="currentQuality === q" class="fa-solid fa-check text-[8px]"></i>
+                        </button>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Pre-roll Video Ad -->
+            <div 
+                x-show="dismissed && preRollActive && hasOverlayAd"
+                class="absolute inset-0 z-40 bg-black flex flex-col items-center justify-center select-none"
+                style="display: none;"
+            >
+                <img src="{{ video.thumbnail }}" class="absolute inset-0 w-full h-full object-cover opacity-30 filter blur-md">
+                
+                <div class="relative z-10 w-full h-full flex flex-col items-center justify-between p-6">
+                    <div class="w-full flex items-center justify-between text-[10px] md:text-xs text-brand-muted font-bold">
+                        <span class="bg-black/60 px-3 py-1.5 rounded-full border border-brand-border/20 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-brand-primary animate-pulse"></span>
+                            PUBLICITÉ SPONSORISÉE
+                        </span>
+                        <span class="bg-black/60 px-3 py-1.5 rounded-full border border-brand-border/20" x-show="preRollCountdown > 0">
+                            La vidéo commencera dans <span class="text-brand-primary font-black" x-text="preRollCountdown"></span>s
+                        </span>
+                    </div>
+
+                    <div class="flex-1 flex items-center justify-center max-w-[85%]">
+                        {% for ad in ads_overlay|slice:":1" %}
+                            <div class="glass-panel p-4 rounded-3xl border border-brand-primary/30 shadow-glow text-center max-w-[500px]">
+                                {% if ad.image %}
+                                    <a href="{{ ad.link }}" target="_blank" class="block rounded-2xl overflow-hidden hover:scale-[1.02] transition-transform duration-300">
+                                        <img src="{{ ad.image.url }}" class="max-h-[150px] md:max-h-[200px] w-full object-contain">
+                                    </a>
+                                {% else %}
+                                    <div class="text-white text-xs scale-90">{{ ad.code|safe }}</div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="w-full flex justify-end">
+                        <button 
+                            @click="
+                                preRollActive = false;
+                                if ($refs.videoPlayer) $refs.videoPlayer.play();
+                            "
+                            :disabled="preRollCountdown > 0"
+                            class="px-5 py-2.5 font-extrabold text-[11px] md:text-xs rounded-full border transition-all shadow-glow flex items-center gap-2 active:scale-95 duration-300"
+                            :class="preRollCountdown > 0 ? 'bg-black/40 text-brand-muted border-brand-border/40 cursor-not-allowed' : 'bg-gradient-to-r from-brand-primary to-brand-secondary text-white border-brand-primary cursor-pointer'"
+                        >
+                            <span x-show="preRollCountdown > 0">Passer l'annonce (<span x-text="preRollCountdown"></span>)</span>
+                            <span x-show="preRollCountdown <= 0" class="flex items-center gap-1.5">Passer l'annonce <i class="fa-solid fa-chevron-right"></i></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Post-roll Video Ad -->
+            <div 
+                x-show="postRollActive"
+                class="absolute inset-0 z-40 bg-black/95 flex flex-col items-center justify-center p-6 text-center select-none"
+                style="display: none;"
+            >
+                <img src="{{ video.thumbnail }}" class="absolute inset-0 w-full h-full object-cover opacity-10 filter blur-lg">
+                
+                <div class="relative z-10 w-full h-full flex flex-col items-center justify-between">
+                    <div class="w-full flex justify-between items-center">
+                        <span class="text-[10px] md:text-xs font-black tracking-wider text-brand-primary bg-brand-primary/10 border border-brand-primary/20 px-3 py-1 rounded-full">
+                            MERCI D'AVOIR REGARDÉ ! 💎
+                        </span>
+                        
+                        <button 
+                            @click="
+                                postRollActive = false;
+                                if ($refs.videoPlayer) {
+                                    $refs.videoPlayer.currentTime = 0;
+                                    $refs.videoPlayer.play();
+                                }
+                            "
+                            class="p-2 bg-brand-card hover:bg-brand-glass text-white border border-brand-border/40 hover:border-brand-primary/45 rounded-full active:scale-90 transition-all flex items-center justify-center"
+                            title="Revoir la vidéo"
+                        >
+                            <i class="fa-solid fa-rotate-right text-sm"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex-1 flex flex-col items-center justify-center max-w-[85%] mt-2">
+                        <h4 class="text-xs font-bold text-white mb-2">Sponsorisé par nos partenaires</h4>
+                        {% for ad in ads_overlay|slice:":1" %}
+                            <div class="glass-panel p-3 rounded-2xl border border-brand-primary/30 shadow-glow text-center max-w-[480px]">
+                                {% if ad.image %}
+                                    <a href="{{ ad.link }}" target="_blank" class="block rounded-2xl overflow-hidden hover:scale-[1.02] transition-transform duration-300">
+                                        <img src="{{ ad.image.url }}" class="max-h-[130px] w-full object-contain">
+                                    </a>
+                                {% else %}
+                                    <div class="text-white text-xs scale-90">{{ ad.code|safe }}</div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="w-full mt-3 flex items-center justify-center gap-3">
+                        <a 
+                            href="/" 
+                            class="px-4 py-2 rounded-full bg-brand-card hover:bg-brand-glass border border-brand-border text-[11px] font-bold text-brand-text active:scale-95 transition-all"
+                        >
+                            Accueil
+                        </a>
+                        {% if related_videos %}
+                            {% with next_vid=related_videos|first %}
+                            <a 
+                                href="{{ next_vid.get_absolute_url }}" 
+                                class="px-4 py-2 rounded-full bg-gradient-to-r from-brand-primary to-brand-secondary text-white text-[11px] font-bold active:scale-95 transition-all shadow-glow flex items-center gap-1.5"
+                            >
+                                Vidéo suivante <i class="fa-solid fa-chevron-right text-[9px]"></i>
+                            </a>
+                            {% endwith %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- YouTube-style Overlay Banner Ad -->
+            {% for ad in ads_overlay %}
+                <div 
+                    x-data="{ visible: true }"
+                    x-show="visible"
+                    class="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 w-[85%] max-w-[468px] bg-black/90 border border-brand-border/40 rounded-xl p-3 flex items-center gap-3 shadow-xl backdrop-blur-md"
+                    style="display: none;"
+                >
+                    <button 
+                        @click="visible = false" 
+                        class="absolute -top-2.5 -right-2.5 bg-brand-primary text-white rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs border border-brand-border/50 shadow-glow active:scale-90"
+                    >
+                        ✕
+                    </button>
+                    {% if ad.image %}
+                        <a href="{{ ad.link }}" target="_blank" class="flex-1 block"><img src="{{ ad.image.url }}" class="w-full h-auto rounded-lg object-contain"></a>
+                    {% else %}
+                        <div class="flex-1 text-xs text-white">{{ ad.code|safe }}</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Video Info Header -->
+        <div class="mt-6">
+            <h1 class="text-2xl md:text-3xl font-extrabold text-brand-text tracking-tight leading-tight mb-4">
+                {{ video.title }}
+            </h1>
+            
+            <!-- Prominent Visual Stats Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+                <div class="flex items-center gap-3 bg-brand-card/50 border border-brand-border/30 rounded-2xl px-4 py-3 shadow-sm">
+                    <div class="w-10 h-10 rounded-xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center text-brand-primary">
+                        <i class="fa-solid fa-eye text-lg"></i>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-brand-muted font-bold uppercase tracking-wider">Vues</div>
+                        <div class="text-base font-extrabold text-white leading-none mt-1">{{ video.views_count }}</div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 bg-brand-card/50 border border-brand-border/30 rounded-2xl px-4 py-3 shadow-sm">
+                    <div class="w-10 h-10 rounded-xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center text-brand-primary">
+                        <i class="fa-solid fa-thumbs-up text-lg"></i>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-brand-muted font-bold uppercase tracking-wider">J'aime</div>
+                        <div class="text-base font-extrabold text-white leading-none mt-1">{{ video.total_likes }}</div>
+                    </div>
+                </div>
+
+                <div class="col-span-2 sm:col-span-1 flex items-center gap-3 bg-brand-card/50 border border-brand-border/30 rounded-2xl px-4 py-3 shadow-sm">
+                    <div class="w-10 h-10 rounded-xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center text-brand-primary animate-pulse">
+                        <i class="fa-solid fa-fire text-lg"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-[10px] text-brand-muted font-bold uppercase tracking-wider leading-none">Satisfaction</div>
+                        <div class="flex items-center justify-between text-xs font-bold text-white mt-1 mb-1">
+                            <span>98%</span>
+                        </div>
+                        <div class="w-full bg-brand-border/30 rounded-full h-1.5 overflow-hidden">
+                            <div class="bg-gradient-to-r from-brand-primary to-brand-secondary h-1.5 rounded-full" style="width: 98%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-brand-border/20 mb-6">
+                <!-- Date metadata -->
+                <div class="text-xs font-semibold text-brand-muted flex items-center gap-4">
+                    <span class="flex items-center gap-1.5"><i class="fa-regular fa-calendar text-brand-primary"></i> Publié le {{ video.created_at|date:"d M Y" }}</span>
+                </div>
+                
+                <!-- Action Controls (Likes, Standard Copy Link, Report) -->
+                <div class="flex items-center flex-wrap gap-3">
+                    <!-- Dynamic Like Button via Alpine.js -->
+                    <button 
+                        x-data="{ 
+                            liked: {% if user.is_authenticated and user in video.likes.all %}true{% else %}false{% endif %}, 
+                            count: {{ video.total_likes }},
+                            async toggleLike() {
+                                try {
+                                    const res = await fetch('{% url "like_video" video.id %}');
+                                    const data = await res.json();
+                                    this.liked = data.liked;
+                                    this.count = data.count;
+                                } catch(e) {}
+                            }
+                        }"
+                        @click="toggleLike()"
+                        :class="liked ? 'bg-brand-primary text-white border-brand-primary shadow-glow' : 'bg-brand-card hover:bg-brand-glass border-brand-border/40 text-brand-text hover:border-brand-primary/45'"
+                        class="flex items-center gap-2 px-5 py-2.5 rounded-full border transition-all duration-300 active:scale-95 text-xs font-bold shadow-md"
+                    >
+                        <i class="fa-solid fa-thumbs-up text-sm"></i>
+                        <span x-text="count"></span>
+                    </button>
+                    
+                    <!-- Premium standard Copy Link button (strictly no social networks) -->
+                    <button 
+                        x-data="{ copied: false }"
+                        @click="
+                            navigator.clipboard.writeText('{{ request.build_absolute_uri }}');
+                            copied = true;
+                            setTimeout(() => copied = false, 2000);
+                        "
+                        :class="copied ? 'bg-green-500/20 text-green-400 border-green-500/40' : 'bg-brand-card hover:bg-brand-glass border-brand-border/40 text-brand-text hover:border-brand-primary/45'"
+                        class="flex items-center gap-2 px-4 py-2.5 rounded-full border transition-all duration-300 active:scale-95 text-xs font-bold shadow-md"
+                        title="Copier le lien direct de la vidéo"
+                    >
+                        <i class="fa-regular" :class="copied ? 'fa-circle-check text-sm' : 'fa-copy text-sm'"></i>
+                        <span x-text="copied ? 'Lien copié !' : 'Partager / Copier le lien'"></span>
+                    </button>
+
+                    <!-- Content Report / Takedown Request Option -->
+                    <button 
+                        @click="showReportModal = true"
+                        class="flex items-center gap-2 px-4 py-2.5 rounded-full border border-brand-border/40 bg-brand-card text-brand-muted hover:text-white hover:bg-red-500/10 hover:border-red-500/35 text-xs font-bold shadow-md active:scale-95 transition-all"
+                        title="Signaler la vidéo ou demander son retrait"
+                    >
+                        <i class="fa-solid fa-triangle-exclamation text-sm text-red-500"></i>
+                        <span>Signaler / Retrait</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Channel / Uploader Metadata info card -->
+            <div class="bg-brand-card border border-brand-border/40 rounded-3xl p-6 mb-8 shadow-lg">
+                <div class="flex items-center justify-between flex-wrap gap-4 border-b border-brand-border/20 pb-5 mb-5">
+                    <div class="flex items-center gap-4">
+                        {% if video.uploader and not video.uploader.is_superuser and video.uploader.username != 'admin' %}
+                            <a href="{% url 'public_profile' video.uploader.username %}" class="block relative shrink-0">
+                                {% if video.uploader.profile_image %}
+                                    <img src="{{ video.uploader.profile_image.url }}" class="w-12 h-12 rounded-full object-cover border-2 border-brand-primary shadow-glow">
+                                {% else %}
+                                    <div class="w-12 h-12 rounded-full bg-brand-primary/10 text-brand-primary border-2 border-brand-primary shadow-glow flex items-center justify-center font-extrabold text-base uppercase">
+                                        {{ video.uploader.username|slice:":1" }}
+                                    </div>
+                                {% endif %}
+                                {% if video.uploader.is_verified %}
+                                <span class="absolute -bottom-1 -right-1 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] border border-brand-bg shadow-sm">✓</span>
+                                {% endif %}
+                            </a>
+                            <div>
+                                <a href="{% url 'public_profile' video.uploader.username %}" class="font-extrabold text-brand-text hover:text-brand-primary transition-colors text-base flex items-center gap-1.5">
+                                    {{ video.uploader.username }}
+                                    {% if video.uploader.is_pro %}
+                                    <span class="text-[9px] uppercase tracking-wider bg-gradient-to-r from-amber-500 to-amber-600 text-white px-1.5 py-0.5 rounded font-black scale-90">PRO</span>
+                                    {% endif %}
+                                </a>
+                                <div class="text-[11px] font-semibold text-brand-muted mt-0.5">{{ video.uploader.followers.count }} abonnés</div>
+                            </div>
+                        {% else %}
+                             <div class="w-12 h-12 rounded-full bg-brand-primary/20 flex items-center justify-center text-xl shrink-0 border border-brand-primary/45 shadow-glow">💎</div>
+                             <div>
+                                <span class="font-extrabold text-brand-text text-base">DORO CAVIAR</span>
+                                <div class="text-[11px] font-semibold text-brand-muted mt-0.5">Chaîne Officielle</div>
+                             </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Boutons relationnels et chat en direct -->
+                    {% if user.is_authenticated and video.uploader and not video.uploader.is_superuser and video.uploader.username != 'admin' and video.uploader != user %}
+                    <div>
+                        <template x-if="friendshipStatus === 'NONE'">
+                            <button 
+                                @click="
+                                    fetch('/accounts/friends/send/{{ video.uploader.username }}/', {
+                                        method: 'POST',
+                                        headers: { 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest' }
+                                    })
+                                    .then(res => res.json())
+                                    .then(data => {
+                                        friendshipStatus = 'PENDING_SENT';
+                                        friendRequestId = data.friend_request_id;
+                                    })
+                                "
+                                class="px-6 py-2.5 font-bold text-xs text-white bg-gradient-to-r from-brand-primary to-brand-secondary rounded-full active:scale-95 transition-all shadow-glow hover:shadow-[0_0_15px_rgba(230,0,126,0.4)]"
+                            >
+                                S'abonner / Chat
+                            </button>
+                        </template>
+
+                        <template x-if="friendshipStatus === 'PENDING_SENT'">
+                            <span class="px-4 py-2 text-xs font-semibold text-brand-muted bg-brand-border/20 rounded-full select-none">
+                                Demande en attente...
+                            </span>
+                        </template>
+
+                        <template x-if="friendshipStatus === 'PENDING_RECEIVED'">
+                            <button 
+                                @click="
+                                    fetch('/accounts/friends/accept/' + friendRequestId + '/', {
+                                        method: 'POST',
+                                        headers: { 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest' }
+                                    })
+                                    .then(res => res.json())
+                                    .then(data => {
+                                        friendshipStatus = 'ACCEPTED';
+                                    })
+                                "
+                                class="px-6 py-2.5 font-bold text-xs text-white bg-green-600 hover:bg-green-700 rounded-full active:scale-95 transition-all shadow-md"
+                            >
+                                Accepter la demande
+                            </button>
+                        </template>
+
+                        <template x-if="friendshipStatus === 'ACCEPTED'">
+                            <button 
+                                @click="
+                                    showChatWidget = true;
+                                    loadChatHistory();
+                                "
+                                class="px-6 py-2.5 font-bold text-xs text-white bg-brand-primary hover:bg-brand-primary/80 rounded-full active:scale-95 transition-all shadow-glow flex items-center gap-1.5"
+                            >
+                                <i class="fa-regular fa-comment-dots"></i> Discuter en direct
+                            </button>
+                        </template>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Video description -->
+                <div class="text-sm text-brand-muted/95 leading-relaxed whitespace-pre-wrap">
+                    {{ video.description|urlize }}
+                </div>
+            </div>
+        </div>
+
+        <!-- COMMENTS AREA -->
+        <div class="mt-8 border-t border-brand-border/20 pt-8">
+            <h3 class="text-xl font-extrabold text-brand-text mb-6 tracking-tight">
+                {{ video.comments.count }} Commentaire(s)
+            </h3>
+            
+            {% if user.is_authenticated %}
+            <!-- Reactive Comment Senders Form with HTMX -->
+            <form 
+                hx-post="{% url 'add_comment' %}"
+                hx-target="#comments-list"
+                hx-swap="afterbegin"
+                hx-indicator="#comment-loader"
+                hx-on::after-request="if(event.detail.successful) this.reset()"
+                class="mb-8 flex gap-4 bg-brand-card/50 border border-brand-border/40 p-5 rounded-2xl shadow-md"
+            >
+                {% csrf_token %}
+                <input type="hidden" name="video_id" value="{{ video.id }}">
+                
+                <div class="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-brand-border">
+                    {% if user.profile_image %}
+                        <img src="{{ user.profile_image.url }}" class="w-full h-full object-cover">
+                    {% else %}
+                        <div class="w-full h-full bg-brand-primary flex items-center justify-center font-bold text-white text-xs">
+                            {{ user.username|slice:":1"|upper }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="flex-1">
+                    <textarea 
+                        name="content" 
+                        required 
+                        placeholder="Ajouter un commentaire public..." 
+                        class="w-full bg-brand-text/5 border border-brand-border/40 rounded-xl p-3 text-brand-text text-sm outline-none focus:border-brand-primary min-h-[90px] max-h-[250px] transition-all resize-y placeholder-brand-text/45"
+                    ></textarea>
+                    
+                    <div class="flex justify-between items-center mt-3">
+                        <!-- Tiny loading indicator -->
+                        <div id="comment-loader" class="htmx-indicator flex items-center gap-1">
+                            <span class="w-2 h-2 bg-brand-primary rounded-full animate-bounce"></span>
+                            <span class="w-2 h-2 bg-brand-secondary rounded-full animate-bounce delay-100"></span>
+                            <span class="text-[10px] font-bold text-brand-muted ml-1">Publication...</span>
+                        </div>
+                        
+                        <button 
+                            type="submit" 
+                            class="ml-auto px-5 py-2 font-bold text-xs text-white bg-gradient-to-r from-brand-primary to-brand-secondary rounded-full active:scale-95 transition-all shadow-glow"
+                        >
+                            Publier
+                        </button>
+                    </div>
+                </div>
+            </form>
+            {% else %}
+            <div class="mb-8 text-center p-6 bg-brand-card/40 rounded-2xl border border-brand-border/30">
+                <p class="text-xs font-semibold text-brand-muted">Veuillez vous <a href="{% url 'login' %}" class="text-brand-primary hover:underline font-extrabold">connecter</a> pour laisser un commentaire.</p>
+            </div>
+            {% endif %}
+
+            <!-- Comments dynamic container list -->
+            <div id="comments-list" class="flex flex-col gap-4">
+                {% for comment in video.comments.all %}
+                    {% include "videos/comment_single_fragment.html" %}
+                {% empty %}
+                    <div class="text-center py-12 text-brand-muted text-xs font-semibold select-none border border-dashed border-brand-border/40 rounded-2xl">
+                        Soyez le premier à commenter ! 💬
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT COLUMN: Sidebar suggestions (Flex: 1) -->
+    <div class="w-full lg:w-[350px] shrink-0">
+        <h3 class="mb-5 font-extrabold text-brand-text text-sm md:text-base border-l-4 border-brand-primary pl-4 tracking-tight">
+            Vidéos Suggérées
+        </h3>
+        
+        <div class="flex flex-col gap-4">
+            {% for related in related_videos %}
+            <a 
+                href="{{ related.get_absolute_url }}" 
+                class="group flex gap-3 bg-brand-card hover:bg-brand-glass border border-brand-border/40 hover:border-brand-primary/45 rounded-2xl overflow-hidden transition-all duration-300 shadow-md h-24 relative"
+            >
+                <div class="w-[120px] h-full shrink-0 relative overflow-hidden bg-black/10">
+                    {% if related.thumbnail %}
+                        <img src="{{ related.thumbnail }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
+                    {% else %}
+                        <div class="w-full h-full flex items-center justify-center bg-brand-primary/5 text-brand-primary"><i class="fa-solid fa-video"></i></div>
+                    {% endif %}
+                    
+                    {% if related.is_short %}
+                    <span class="absolute top-1.5 right-1.5 z-10 text-[8px] font-extrabold uppercase bg-amber-500 text-white px-1.5 py-0.5 rounded shadow-sm">⚡ Short</span>
+                    {% endif %}
+                </div>
+                
+                <div class="py-2.5 pr-3 pl-1 flex-1 flex flex-col justify-between overflow-hidden">
+                    <h4 class="text-[12px] font-bold text-brand-text group-hover:text-brand-primary transition-colors leading-snug line-clamp-2">
+                        {{ related.title }}
+                    </h4>
+                    <div class="text-[10px] font-semibold text-brand-muted flex items-center justify-between">
+                        <span>{{ related.views_count }} vues</span>
+                        <span>{{ related.created_at|timesince }}</span>
+                    </div>
+                </div>
+            </a>
+            {% empty %}
+            <p class="text-xs font-semibold text-brand-muted/75 py-6 text-center select-none">Aucune suggestion disponible.</p>
+            {% endfor %}
+        </div>
+    </div>
+    <!-- Modal de signalement / demande de retrait -->
+    <div 
+        x-show="showReportModal"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+        style="display: none;"
+        @keydown.escape.window="showReportModal = false"
+    >
+        <div 
+            @click.outside="showReportModal = false"
+            class="bg-brand-card border border-brand-border/60 rounded-3xl max-w-md w-full p-6 shadow-2xl relative"
+        >
+            <button 
+                @click="showReportModal = false"
+                class="absolute top-4 right-4 text-brand-muted hover:text-white text-lg transition-colors"
+            >
+                ✕
+            </button>
+            
+            <h3 class="text-lg font-extrabold text-white mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation text-red-500"></i>
+                Signaler cette vidéo
+            </h3>
+            
+            <form 
+                action="{% url 'report_content' %}" 
+                method="POST"
+                @submit.prevent="
+                    const formData = new FormData($el);
+                    fetch($el.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: { 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest' }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        showReportModal = false;
+                        alert('Votre signalement a bien été pris en compte. Merci.');
+                    });
+                "
+            >
+                <input type="hidden" name="video_id" value="{{ video.id }}">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-brand-muted mb-2">Motif du signalement</label>
+                        <select 
+                            name="reason" 
+                            required 
+                            class="w-full bg-black/40 border border-brand-border/40 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-brand-primary"
+                        >
+                            <option value="COPYRIGHT">Atteinte aux droits d'auteur / Retrait</option>
+                            <option value="INAPPROPRIATE">Contenu inapproprié / Adulte</option>
+                            <option value="SPAM">Spam / Publicité mensongère</option>
+                            <option value="OTHER">Autre motif</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-brand-muted mb-2">Description / Détails</label>
+                        <textarea 
+                            name="message" 
+                            required 
+                            placeholder="Décrivez précisément votre demande ou réclamation..." 
+                            class="w-full bg-black/40 border border-brand-border/40 rounded-xl p-3 text-xs text-white outline-none focus:border-brand-primary min-h-[100px] resize-none"
+                        ></textarea>
+                    </div>
+                    
+                    <div class="flex gap-3 justify-end pt-2">
+                        <button 
+                            type="button" 
+                            @click="showReportModal = false"
+                            class="px-5 py-2.5 rounded-full border border-brand-border/40 text-brand-muted hover:text-white text-xs font-bold transition-all active:scale-95"
+                        >
+                            Annuler
+                        </button>
+                        <button 
+                            type="submit" 
+                            class="px-5 py-2.5 rounded-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all active:scale-95 shadow-lg"
+                        >
+                            Envoyer le signalement
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Chat Widget Drawer -->
+    <div 
+        x-show="showChatWidget"
+        class="fixed bottom-0 right-0 sm:right-6 z-50 w-full sm:max-w-md p-4 transition-all duration-300"
+        style="display: none;"
+        @keydown.escape.window="showChatWidget = false"
+    >
+        <div class="bg-black/95 border border-brand-primary/40 rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col h-[450px] overflow-hidden">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-brand-primary to-brand-secondary px-5 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse"></span>
+                    <span class="text-xs font-extrabold text-white tracking-tight">Chat privé avec {{ video.uploader.username }}</span>
+                </div>
+                <button 
+                    @click="showChatWidget = false"
+                    class="text-white/80 hover:text-white text-sm"
+                >
+                    ✕
+                </button>
+            </div>
+            
+            <!-- Message area -->
+            <div 
+                id="chat-scroll-container" 
+                class="flex-1 overflow-y-auto p-4 space-y-3 bg-brand-bg/50"
+            >
+                <template x-for="msg in chatMessages" :key="msg.id">
+                    <div 
+                        class="flex flex-col max-w-[80%]"
+                        :class="msg.sender === '{{ request.user.username }}' ? 'ml-auto items-end' : 'mr-auto items-start'"
+                    >
+                        <div 
+                            class="p-3 rounded-2xl text-xs font-semibold leading-relaxed"
+                            :class="msg.sender === '{{ request.user.username }}' ? 'bg-brand-primary text-white rounded-br-none' : 'bg-brand-card border border-brand-border/40 text-brand-text rounded-bl-none'"
+                            x-text="msg.content"
+                        ></div>
+                        <span class="text-[9px] text-brand-muted mt-1" x-text="msg.timestamp"></span>
+                    </div>
+                </template>
+                <div x-show="chatMessages.length === 0" class="h-full flex flex-col items-center justify-center text-center p-6 select-none">
+                    <span class="text-2xl mb-2">💬</span>
+                    <p class="text-[10px] font-bold text-brand-muted uppercase tracking-wider">Aucun message</p>
+                    <small class="text-[9px] text-brand-muted/75 mt-1">Envoyez un message pour commencer à discuter !</small>
+                </div>
+            </div>
+            
+            <!-- Footer input -->
+            <form 
+                @submit.prevent="sendChatMessage()"
+                class="p-3 border-t border-brand-border/40 bg-black/60 flex items-center gap-2"
+            >
+                <input 
+                    type="text" 
+                    x-model="chatInput" 
+                    placeholder="Écrire un message..." 
+                    class="flex-1 bg-brand-text/5 border border-brand-border/30 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-brand-primary"
+                >
+                <button 
+                    type="submit" 
+                    class="w-10 h-10 rounded-xl bg-brand-primary hover:bg-brand-primary/80 text-white flex items-center justify-center transition-all active:scale-95"
+                >
+                    <i class="fa-regular fa-paper-plane text-xs"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}{{ category.name }} - DORO CAVIAR{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Header de catégorie -->
+    <div class="glass p-5 rounded-5 mb-5 text-center overflow-hidden position-relative" style="border: 1px solid var(--glass-border);">
+        {% if category.image %}
+            <div class="position-absolute w-100 h-100 top-0 start-0 opacity-25" style="background: url('{{ category.image.url }}') center/cover; filter: blur(20px);"></div>
+        {% endif %}
+        
+        <div class="position-relative z-index-1">
+            <h1 class="display-4 fw-bold text-white mb-3">{{ category.name }}</h1>
+            <p class="lead text-white-50 mx-auto" style="max-width: 700px;">{{ category.description|default:"Découvrez les meilleures vidéos de cette catégorie." }}</p>
+            <div class="mt-4 d-flex justify-content-center gap-3">
+                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">{{ videos.count }} Vidéos</span>
+                {% if category.affiliate_link %}
+                <a href="{{ category.affiliate_link }}" target="_blank" class="btn btn-outline-warning btn-sm rounded-pill px-4">Offres Spéciales 💎</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Grille de vidéos -->
+    <div class="row g-4">
+        {% for video in videos %}
+        <div class="col-md-4 col-lg-3">
+            <div class="video-card glass rounded-4 overflow-hidden h-100" style="transition: transform 0.3s;">
+                <a href="{% url 'video_detail' video.slug %}" class="text-decoration-none">
+                    <div class="thumbnail-container position-relative">
+                        <img src="{{ video.thumbnail_file.url|default:video.thumbnail }}" class="w-100" style="aspect-ratio: 16/9; object-fit: cover;">
+                        <span class="position-absolute bottom-0 right-0 m-2 badge bg-dark opacity-75">12:34</span>
+                    </div>
+                    <div class="p-3">
+                        <h6 class="text-white fw-bold mb-1">{{ video.title|truncatechars:50 }}</h6>
+                        <small class="text-white-50">{{ video.uploader.display_name|default:"DORO CAVIAR" }} • {{ video.views_count }} vues</small>
+                    </div>
+                </a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <h5 class="text-white-50">Aucune vidéo dans cette catégorie pour le moment.</h5>
+            <a href="{% url 'category_list' %}" class="btn btn-link text-warning mt-3">Retourner aux catégories</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .video-card:hover { transform: scale(1.03); border-color: var(--primary) !important; }
+</style>
+{% endblock %}

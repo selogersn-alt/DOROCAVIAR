@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Shorts - DORO CAVIAR{% endblock %}
+
+{% block content %}
+<style>
+    /* Reset layout pour le plein écran mobile */
+    body { overflow: hidden; background: #000; }
+    .main-content { padding: 0 !important; margin: 0 !important; height: 100vh; }
+    .sidebar-yt { display: none; } /* On cache la sidebar pour les shorts */
+
+    .shorts-container {
+        height: 100vh;
+        overflow-y: scroll;
+        scroll-snap-type: y mandatory;
+        background: #000;
+    }
+
+    .short-item {
+        height: 100vh;
+        width: 100%;
+        scroll-snap-align: start;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .short-video {
+        height: 100%;
+        width: 100%;
+        max-width: 500px; /* Largeur max type téléphone */
+        object-fit: cover;
+        background: #111;
+    }
+
+    .short-overlay {
+        position: absolute;
+        bottom: 20px;
+        left: 0;
+        right: 0;
+        padding: 20px;
+        background: linear-gradient(transparent, rgba(0,0,0,0.8));
+        color: white;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .short-actions {
+        position: absolute;
+        right: 15px;
+        bottom: 100px;
+        display: flex;
+        flex-direction: column;
+        gap: 25px;
+        align-items: center;
+        z-index: 20;
+    }
+
+    .action-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        color: white;
+        text-decoration: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+    }
+
+    .action-btn span {
+        font-size: 0.75rem;
+        margin-top: 5px;
+        font-weight: bold;
+    }
+
+    .uploader-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 5px;
+    }
+
+    .uploader-info img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 2px solid white;
+    }
+</style>
+
+<div class="shorts-container" id="shorts-container">
+    {% for short in shorts %}
+    <div class="short-item">
+        <!-- Lecteur Vidéo -->
+        {% if short.video_file %}
+            <video class="short-video" loop playsinline autoplay muted>
+                <source src="{{ short.video_file.url }}" type="video/mp4">
+            </video>
+        {% else %}
+            <iframe class="short-video" src="{{ short.embed_url }}" frameborder="0" allow="autoplay; fullscreen"></iframe>
+        {% endif %}
+
+        <!-- Overlay Infos -->
+        <div class="short-overlay">
+            <div class="uploader-info">
+                <img src="https://ui-avatars.com/api/?name={{ short.uploader.display_name }}&background=random" alt="">
+                <span style="font-weight: 800;">@{{ short.uploader.display_name }}</span>
+                {% if short.uploader.is_superuser or short.uploader.username == 'admin' or short.uploader.is_verified %}<span style="color: #3ea6ff; font-size: 0.8rem;">✓</span>{% endif %}
+            </div>
+            <p style="font-size: 0.95rem; line-height: 1.4;">{{ short.title }}</p>
+            <div style="font-size: 0.8rem; color: #aaa;">🎶 Musique originale - {{ short.uploader.display_name }}</div>
+        </div>
+
+        <!-- Boutons d'Action -->
+        <div class="short-actions">
+            <div class="action-btn" onclick="likeShort(this, {{ short.id }})">
+                <div class="heart-icon">❤️</div>
+                <span class="likes-count">{{ short.total_likes }}</span>
+            </div>
+            <div class="action-btn">
+                <div>💬</div>
+                <span>{{ short.comments.count }}</span>
+            </div>
+            <div class="action-btn">
+                <div>📤</div>
+                <span>Partager</span>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div style="color: white; padding: 50px; text-align: center;">Aucun short disponible pour le moment.</div>
+    {% endfor %}
+</div>
+
+<script>
+    function likeShort(btn, shortId) {
+        fetch(`/like/video-ajax/${shortId}/`)
+            .then(response => response.json())
+            .then(data => {
+                const countSpan = btn.querySelector('.likes-count');
+                countSpan.innerText = data.count;
+                btn.style.color = data.liked ? '#ff4b4b' : 'white';
+            });
+    }
+
+    // Gestion de l'autoplay au scroll
+    const container = document.getElementById('shorts-container');
+    const videos = document.querySelectorAll('video');
+
+    container.addEventListener('scroll', () => {
+        videos.forEach(video => {
+            const rect = video.getBoundingClientRect();
+            if (rect.top >= 0 && rect.bottom <= window.innerHeight) {
+                video.play();
+            } else {
+                video.pause();
+            }
+        });
+    });
+</script>
+{% endblock %}

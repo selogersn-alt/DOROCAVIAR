@@ -1,0 +1,54 @@
+{% for video in videos %}
+<a 
+    href="{{ video.get_absolute_url }}" 
+    class="group flex flex-col bg-brand-card hover:bg-brand-glass border border-brand-border/40 hover:border-brand-primary/45 rounded-2xl overflow-hidden transition-all duration-300 shadow-lg hover:shadow-glow hover:-translate-y-1 relative scroll-reveal-card"
+    {% if forloop.last and page_obj.has_next %}
+    hx-get="?page={{ page_obj.next_page_number }}&ajax=1"
+    hx-trigger="revealed"
+    hx-swap="afterend"
+    hx-target="this"
+    hx-indicator="#loader"
+    {% endif %}
+>
+    <!-- Premium Ambient glow backdrop -->
+    <div class="ambient-glow"></div>
+    <!-- Thumbnail container with absolute tag -->
+    <div class="relative w-full aspect-video overflow-hidden bg-black/20">
+        {% if video.category %}
+        <span class="absolute top-3 left-3 z-10 text-[10px] font-extrabold uppercase bg-brand-primary text-white px-2.5 py-1 rounded-full shadow-glow">
+            {{ video.category.name }}
+        </span>
+        {% endif %}
+        
+        {% if video.is_short %}
+        <span class="absolute top-3 right-3 z-10 text-[10px] font-extrabold uppercase bg-amber-500 text-white px-2.5 py-1 rounded-full shadow-glow">
+            <i class="fa-solid fa-bolt mr-1"></i>Short
+        </span>
+        {% endif %}
+
+        {% if video.thumbnail %}
+        <img 
+            src="{{ video.thumbnail }}" 
+            alt="{{ video.title }}" 
+            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+            loading="lazy"
+        >
+        {% else %}
+        <div class="w-full h-full bg-brand-primary/10 flex items-center justify-center text-brand-muted text-xs">
+            <i class="fa-solid fa-video text-3xl"></i>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Video details -->
+    <div class="p-4 flex flex-col justify-between flex-1 gap-3">
+        <h2 class="text-sm font-bold text-brand-text group-hover:text-brand-primary transition-colors line-clamp-2 leading-snug">
+            {{ video.title }}
+        </h2>
+        <div class="flex items-center justify-between text-[11px] text-brand-muted font-medium">
+            <span class="flex items-center gap-1.5"><i class="fa-regular fa-eye text-brand-primary/75 text-xs"></i> {{ video.views_count }} vues</span>
+            <span>{{ video.created_at|timesince }}</span>
+        </div>
+    </div>
+</a>
+{% endfor %}

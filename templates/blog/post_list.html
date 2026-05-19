@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Blog - DORO CAVIAR{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="header-section text-center mb-5">
+        <h1 class="display-4 fw-bold text-gradient">Actualités & Blogs</h1>
+        <p class="text-muted">Découvrez les dernières tendances et articles exclusifs de la communauté.</p>
+    </div>
+
+    <!-- Filtres par Catégorie -->
+    <div class="d-flex flex-wrap gap-2 mb-5 justify-content-center">
+        <a href="{% url 'blog:post_list' %}" class="btn rounded-pill" style="border: 1px solid var(--primary); color: var(--primary);">Tout</a>
+        {% for cat in categories %}
+        <a href="{% url 'blog:category_post_list' cat.slug %}" class="btn btn-outline-light rounded-pill">{{ cat.name }}</a>
+        {% endfor %}
+    </div>
+
+    <div class="row g-4">
+        {% for post in posts %}
+        <div class="col-md-4">
+            <div class="card blog-card glass h-100 border-0 overflow-hidden">
+                <div class="card-img-wrapper position-relative">
+                    <img src="{{ post.featured_image.url }}" class="card-img-top" alt="{{ post.title }}" style="height: 220px; object-fit: cover;">
+                    <span class="badge position-absolute top-0 start-0 m-3" style="background: var(--primary); color: white;">{{ post.category.name }}</span>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center gap-2 mb-3 text-muted small">
+                        <span>👤 {{ post.author.username }}</span>
+                        <span>•</span>
+                        <span>📅 {{ post.created_at|date:"d M Y" }}</span>
+                    </div>
+                    <h5 class="card-title fw-bold mb-3">{{ post.title }}</h5>
+                    <p class="card-text text-muted small">{{ post.content|striptags|truncatewords:20 }}</p>
+                    <a href="{{ post.get_absolute_url }}" class="btn btn-link p-0 stretched-link" style="color: var(--primary);">Lire la suite →</a>
+                </div>
+                <div class="card-footer bg-transparent border-0 p-4 pt-0">
+                    <div class="text-muted small">👁️ {{ post.views_count }} vues</div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <h3 class="text-muted">Aucun article publié pour le moment.</h3>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <nav class="mt-5">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link glass" href="?page={{ page_obj.previous_page_number }}">Précédent</a></li>
+            {% endif %}
+            <li class="page-item active"><span class="page-link" style="background: var(--primary); border-color: var(--primary);">{{ page_obj.number }}</span></li>
+            {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link glass" href="?page={{ page_obj.next_page_number }}">Suivant</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<style>
+    .blog-card { transition: transform 0.3s ease; }
+    .blog-card:hover { transform: translateY(-10px); }
+    .text-gradient {
+        background: linear-gradient(45deg, #f39c12, #f1c40f);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .card-img-wrapper { overflow: hidden; }
+    .card-img-top { transition: transform 0.5s ease; }
+    .blog-card:hover .card-img-top { transform: scale(1.1); }
+</style>
+{% endblock %}

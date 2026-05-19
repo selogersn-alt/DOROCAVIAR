@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Mon Réseau Social - DORO CAVIAR{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row g-4">
+        <!-- Sidebar Sociale -->
+        <div class="col-lg-4">
+            <div class="glass p-4 rounded-4 sticky-top" style="top: 100px;">
+                <h4 class="fw-bold text-white mb-4">Réseau Social</h4>
+                <div class="list-group list-group-flush bg-transparent">
+                    <a href="#friends" class="list-group-item bg-transparent text-white border-secondary py-3 d-flex justify-content-between">
+                        <span>👥 Mes Amis</span>
+                        <span class="badge bg-primary rounded-pill">{{ user.friends.count }}</span>
+                    </a>
+                    <a href="#requests" class="list-group-item bg-transparent text-white border-secondary py-3 d-flex justify-content-between">
+                        <span>✉️ Demandes en attente</span>
+                        <span class="badge rounded-pill" style="background: var(--primary); color: white;">{{ pending_requests_count }}</span>
+                    </a>
+                    <a href="#following" class="list-group-item bg-transparent text-white border-secondary py-3 d-flex justify-content-between">
+                        <span>🔔 Abonnements</span>
+                        <span class="badge bg-secondary rounded-pill">{{ user.following.count }}</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenu Principal -->
+        <div class="col-lg-8">
+            <!-- Demandes d'amis -->
+            <section id="requests" class="mb-5">
+                <h3 class="fw-bold text-white mb-4">Demandes d'ajouts</h3>
+                <div class="row g-3">
+                    {% for req in pending_requests %}
+                    <div class="col-12">
+                        <div class="glass p-3 rounded-4 d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-3">
+                                <img src="https://ui-avatars.com/api/?name={{ req.sender.username }}&background=random" class="rounded-circle" width="50">
+                                <div>
+                                    <h6 class="mb-0 text-white">{{ req.sender.username }}</h6>
+                                    <small class="text-white-50">Souhaite devenir votre ami</small>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <form action="{% url 'accept_friend' req.id %}" method="POST">
+                                    {% csrf_token %}
+                                    <button class="btn btn-success rounded-pill px-3 btn-sm">Accepter</button>
+                                </form>
+                                <button class="btn btn-outline-danger rounded-pill px-3 btn-sm">Refuser</button>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-white-50">Aucune demande en attente.</p>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <!-- Liste d'Amis -->
+            <section id="friends">
+                <h3 class="fw-bold text-white mb-4">Mes Amis</h3>
+                <div class="row g-4">
+                    {% for friend in user.friends.all %}
+                    <div class="col-md-6">
+                        <div class="glass p-4 rounded-4 text-center">
+                            <img src="https://ui-avatars.com/api/?name={{ friend.username }}&background=random" class="rounded-circle mb-3" width="80">
+                            <h5 class="text-white fw-bold">{{ friend.username }}</h5>
+                            <div class="d-flex justify-content-center gap-2 mt-3">
+                                <a href="{% url 'chat_detail' friend.username %}" class="btn btn-primary btn-sm rounded-pill px-3">Message</a>
+                                <a href="{% url 'public_profile' friend.username %}" class="btn btn-outline-light btn-sm rounded-pill px-3">Profil</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12 text-center py-5">
+                        <p class="text-white-50">Vous n'avez pas encore d'amis. Explorez les profils pour en ajouter !</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+{% endblock %}

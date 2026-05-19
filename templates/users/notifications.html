@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Mes Notifications - DORO CAVIAR{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 700px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-white">Notifications</h2>
+        <span class="badge rounded-pill px-3" style="background: var(--primary); color: white;">{{ notifications.count }} totale(s)</span>
+    </div>
+
+    <div class="notification-list glass p-3 rounded-4">
+        {% for notif in notifications %}
+        <div class="notif-item d-flex align-items-start gap-3 p-3 rounded-3 mb-2 {% if not notif.is_read %}unread-notif{% endif %}" 
+             style="transition: background 0.3s; border-bottom: 1px solid rgba(255,255,255,0.05);">
+            
+            <div class="notif-icon fs-4">
+                {% if notif.notification_type == 'FOLLOW' %}👤
+                {% elif notif.notification_type == 'LIKE' %}❤️
+                {% elif notif.notification_type == 'MESSAGE' %}💬
+                {% else %}🔔{% endif %}
+            </div>
+
+            <div class="notif-body flex-grow-1">
+                <div class="text-white-50 small mb-1">{{ notif.created_at|timesince }}</div>
+                <div class="text-white">{{ notif.text }}</div>
+                {% if notif.link %}
+                <a href="{{ notif.link }}" class="btn btn-sm btn-link p-0 mt-2" style="color: var(--primary);">Voir →</a>
+                {% endif %}
+            </div>
+
+            {% if not notif.is_read %}
+            <div class="unread-dot rounded-circle" style="width: 10px; height: 10px; background: var(--primary);"></div>
+            {% endif %}
+        </div>
+        {% empty %}
+        <div class="text-center py-5">
+            <div class="fs-1 opacity-25 mb-3">📭</div>
+            <h5 class="text-white-50">Aucune notification pour le moment.</h5>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .notif-item:hover { background: rgba(255,255,255,0.05); }
+    .unread-notif { background: rgba(243, 156, 18, 0.05); }
+</style>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Inscription - {{ platform.site_name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 450px; margin: 4rem auto; background: white; padding: 2.5rem; border-radius: 20px; box-shadow: 0 10px 40px rgba(230, 0, 126, 0.1); border: 1px solid rgba(230, 0, 126, 0.1);">
+    <h1 style="color: var(--primary); text-align: center; margin-bottom: 1.5rem; font-weight: 800;">Rejoignez-nous</h1>
+    <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">Créez votre compte et commencez à publier !</p>
+    
+    {% if form.errors %}
+    <div style="background: #ffebee; color: #c62828; padding: 1rem; border-radius: 10px; margin-bottom: 1.5rem;">
+        {{ form.errors }}
+    </div>
+    {% endif %}
+
+    <form method="post" style="display: flex; flex-direction: column; gap: 1.2rem;">
+        {% csrf_token %}
+        {% for field in form %}
+        <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+            <label style="color: var(--text-main); font-weight: 600;">{{ field.label }}</label>
+            <input type="{{ field.field.widget.input_type|default:'text' }}" name="{{ field.name }}" required style="padding: 12px; border-radius: 10px; border: 1px solid #ddd; outline: none;">
+        </div>
+        {% endfor %}
+        
+        <button type="submit" style="background: var(--primary); color: white; padding: 14px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 1rem; box-shadow: 0 4px 15px rgba(230, 0, 126, 0.3);">
+            Créer mon compte
+        </button>
+    </form>
+    
+    <p style="text-align: center; margin-top: 2rem; color: var(--text-muted);">
+        Déjà membre ? <a href="{% url 'login' %}" style="color: var(--primary); font-weight: bold;">Se connecter</a>
+    </p>
+</div>
+{% endblock %}

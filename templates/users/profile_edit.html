@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Modifier mon Profil - {{ platform.site_name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 600px; margin: 4rem auto; background: white; padding: 2.5rem; border-radius: 20px; box-shadow: var(--shadow); border: 1px solid #eee;">
+    <h1 style="color: var(--primary); margin-bottom: 2rem; font-weight: 800;">Modifier Profil</h1>
+    
+    <form method="post" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 1.5rem;">
+        {% csrf_token %}
+        
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <label style="color: var(--text-main); font-weight: 600;">Photo de profil</label>
+            {% if user.profile_image %}
+                <img src="{{ user.profile_image.url }}" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 10px;">
+            {% endif %}
+            <input type="file" name="profile_image" style="padding: 10px; border: 1px dashed #ccc; border-radius: 10px;">
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <label style="color: var(--text-main); font-weight: 600;">Ma Biographie</label>
+            <textarea name="bio" rows="4" style="padding: 12px; border-radius: 10px; border: 1px solid #ddd; outline: none; font-family: inherit;">{{ user.bio }}</textarea>
+        </div>
+        
+        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+            <button type="submit" style="flex: 2; background: var(--primary); color: white; padding: 14px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(230, 0, 126, 0.3);">
+                Enregistrer les modifications
+            </button>
+            <a href="{% url 'dashboard' %}" style="flex: 1; text-align: center; background: #f0f0f0; color: #333; padding: 14px; border-radius: 10px; font-weight: bold; text-decoration: none;">Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

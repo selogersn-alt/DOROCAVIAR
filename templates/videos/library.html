@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Bibliothèque - DORO CAVIAR{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 2rem 5%;">
+    <h1 style="font-size: 2rem; font-weight: 800; margin-bottom: 3rem; color: white;">Bibliothèque</h1>
+
+    <!-- Historique -->
+    <section style="margin-bottom: 4rem;">
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 2rem;">
+            <span style="font-size: 1.5rem;">🕒</span>
+            <h2 style="font-size: 1.3rem; font-weight: 800;">Historique</h2>
+            <a href="#" style="margin-left: auto; color: var(--primary); font-size: 0.9rem; font-weight: 800; text-decoration: none;">TOUT VOIR</a>
+        </div>
+        <div class="video-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px;">
+            {% for hist in history %}
+            <a href="{{ hist.video.get_absolute_url }}" class="video-card glass" style="height: auto;">
+                <img src="{{ hist.video.thumbnail }}" style="width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 12px;">
+                <div style="padding: 10px;">
+                    <h4 style="font-size: 0.9rem; margin-bottom: 5px; color: white;">{{ hist.video.title|truncatechars:40 }}</h4>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">{{ hist.video.uploader.display_name|default:"DORO CAVIAR" }}</div>
+                </div>
+            </a>
+            {% empty %}
+            <p style="color: var(--text-muted);">Aucune vidéo vue récemment.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <hr style="border: 0; border-top: 1px solid var(--glass-border); margin: 3rem 0;">
+
+    <!-- À regarder plus tard (Favoris) -->
+    <section style="margin-bottom: 4rem;">
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 2rem;">
+            <span style="font-size: 1.5rem;">📁</span>
+            <h2 style="font-size: 1.3rem; font-weight: 800;">À regarder plus tard</h2>
+        </div>
+        <div class="video-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px;">
+            {% for fav in favorites %}
+            <a href="{{ fav.get_absolute_url }}" class="video-card glass" style="height: auto;">
+                <img src="{{ fav.thumbnail }}" style="width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 12px;">
+                <div style="padding: 10px;">
+                    <h4 style="font-size: 0.9rem; margin-bottom: 5px; color: white;">{{ fav.title|truncatechars:40 }}</h4>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">{{ fav.uploader.display_name|default:"DORO CAVIAR" }}</div>
+                </div>
+            </a>
+            {% empty %}
+            <p style="color: var(--text-muted);">Votre liste est vide.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Mes Vidéos -->
+    <section>
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 2rem;">
+            <span style="font-size: 1.5rem;">🎞️</span>
+            <h2 style="font-size: 1.3rem; font-weight: 800;">Vos vidéos</h2>
+        </div>
+        <div class="video-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px;">
+            {% for vid in my_videos %}
+            <a href="{{ vid.get_absolute_url }}" class="video-card glass" style="height: auto;">
+                <img src="{{ vid.thumbnail }}" style="width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 12px;">
+                <div style="padding: 10px;">
+                    <h4 style="font-size: 0.9rem; margin-bottom: 5px; color: white;">{{ vid.title|truncatechars:40 }}</h4>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">{{ vid.views_count }} vues</div>
+                </div>
+            </a>
+            {% empty %}
+            <p style="color: var(--text-muted);">Vous n'avez pas encore mis de vidéo en ligne.</p>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

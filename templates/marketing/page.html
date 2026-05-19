@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}{{ page.meta_title|default:page.title }} - {{ platform.site_name }}{% endblock %}
+{% block meta_description %}{{ page.meta_description }}{% endblock %}
+
+{% block content %}
+<div class="mx-auto my-12 max-w-4xl px-4">
+    <!-- Main glassmorphic wrapper card with responsive padding -->
+    <article class="glass-panel p-6 md:p-12 rounded-3xl border border-brand-border/40 shadow-glow bg-brand-card/60 backdrop-blur-xl">
+        
+        <!-- Header -->
+        <header class="mb-8 border-b border-brand-border/20 pb-6 text-center md:text-left">
+            <h1 class="text-2xl md:text-4xl font-extrabold tracking-tight text-white mb-3">
+                {{ page.title }}
+            </h1>
+            <p class="text-xs text-brand-muted font-semibold uppercase tracking-widest">
+                DORO CAVIAR &bull; Officiel
+            </p>
+        </header>
+
+        <!-- Content Area supporting HTML or Plain Text format natively -->
+        <div class="prose prose-invert max-w-none text-brand-text leading-relaxed text-sm md:text-base space-y-4">
+            {% if page.content_format == 'TEXT' %}
+                {{ page.content|linebreaks }}
+            {% else %}
+                {{ page.content|safe }}
+            {% endif %}
+        </div>
+        
+    </article>
+</div>
+{% endblock %}

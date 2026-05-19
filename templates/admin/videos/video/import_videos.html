@@ -1,0 +1,76 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<div style="padding: 2rem; background: #fff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-w: 800px; margin: 0 auto;">
+    <h1 style="color: #444; border-bottom: 2px solid #eee; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+        Importateur de Vidéos en Masse - DORO CAVIAR
+    </h1>
+    
+    <p style="color: #666; margin-bottom: 2rem; font-size: 0.95rem; line-height: 1.5;">
+        Cet outil vous permet de remplir rapidement le site en important des vidéos. Vous pouvez coller une liste de liens (un par ligne) ou envoyer un fichier CSV. Les vidéos importées avec un uploader vide ou "admin" s'afficheront sous la marque officielle <strong>DORO CAVIAR</strong> sur le site.
+    </p>
+    
+    <form action="." method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <!-- Sélection de la catégorie -->
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; color: #333;">Catégorie par défaut :</label>
+            <select name="category" required style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; max-width: 400px;">
+                <option value="">-- Choisir une catégorie --</option>
+                {% for cat in categories %}
+                    <option value="{{ cat.id }}">{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Sélection de l'uploader -->
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; color: #333;">Propriétaire/Uploader de la vidéo :</label>
+            <select name="uploader" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; max-width: 400px;">
+                <option value="">DORO CAVIAR (Marque Officielle / Admin)</option>
+                {% for u in users %}
+                    <option value="{{ u.id }}">{{ u.username }}</option>
+                {% endfor %}
+            </select>
+            <span style="display: block; font-size: 0.8rem; color: #888; margin-top: 0.25rem;">
+                Si laissé vide ou associé à l'administrateur, la vidéo apparaîtra sur le site sous le nom officiel "DORO CAVIAR".
+            </span>
+        </div>
+
+        <!-- Option 1: URLs à coller -->
+        <div style="margin-bottom: 2rem; border-top: 1px solid #eee; padding-top: 1.5rem;">
+            <h3 style="margin-bottom: 0.75rem; color: #E6007E;">Option A : Coller une liste de liens directs (un par ligne)</h3>
+            <textarea name="bulk_urls" rows="8" placeholder="Exemple :&#10;https://www.youtube.com/watch?v=dQw4w9WgXcQ&#10;https://example.com/videos/dance.mp4" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; box-sizing: border-box;"></textarea>
+            <span style="display: block; font-size: 0.8rem; color: #888; margin-top: 0.25rem;">
+                Accepte les formats YouTube, Vimeo et fichiers vidéos directs (.mp4, etc.).
+            </span>
+        </div>
+
+        <!-- Option 2: CSV Fichier -->
+        <div style="margin-bottom: 2rem; border-top: 1px solid #eee; padding-top: 1.5rem;">
+            <h3 style="margin-bottom: 0.75rem; color: #E6007E;">Option B : Importer depuis un fichier CSV</h3>
+            <input type="file" name="csv_file" accept=".csv" style="width: 100%; padding: 10px; border: 1px dashed #ccc; border-radius: 4px; box-sizing: border-box;">
+            <span style="display: block; font-size: 0.8rem; color: #888; margin-top: 0.25rem;">
+                Le fichier CSV doit contenir les colonnes : <code>titre, url, description (optionnelle)</code>
+            </span>
+        </div>
+
+        <!-- Submit actions -->
+        <div style="border-top: 2px solid #eee; padding-top: 1.5rem;">
+            <button type="submit" class="button" style="background: #E6007E; color: white; padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.95rem;">
+                Lancer l'importation en masse
+            </button>
+            <a href="../" style="margin-left: 15px; color: #666; font-size: 0.95rem; text-decoration: none;">Annuler</a>
+        </div>
+    </form>
+
+    <!-- Exemple CSV -->
+    <div style="margin-top: 3rem; font-size: 0.85rem; color: #888; border-top: 1px solid #eee; padding-top: 1rem;">
+        <strong>Exemple de structure de fichier CSV :</strong><br>
+        <code style="display: block; background: #f8f8f8; padding: 10px; margin-top: 0.5rem; border-radius: 4px; border: 1px solid #ddd;">
+            Mon incroyable vidéo de voyage, https://www.youtube.com/watch?v=dQw4w9WgXcQ, Description de la vidéo<br>
+            Tutoriel de développement, https://example.com/videos/tuto.mp4, Description optionnelle
+        </code>
+    </div>
+</div>
+{% endblock %}

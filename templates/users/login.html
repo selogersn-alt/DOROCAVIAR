@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Connexion - {{ platform.site_name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 450px; margin: 4rem auto; background: white; padding: 2.5rem; border-radius: 20px; box-shadow: 0 10px 40px rgba(230, 0, 126, 0.1); border: 1px solid rgba(230, 0, 126, 0.1);">
+    <h1 style="color: var(--primary); text-align: center; margin-bottom: 2rem; font-weight: 800;">Connexion</h1>
+    
+    <form method="post" style="display: flex; flex-direction: column; gap: 1.5rem;">
+        {% csrf_token %}
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <label style="color: var(--text-main); font-weight: 600;">Nom d'utilisateur</label>
+            <input type="text" name="username" required style="padding: 12px; border-radius: 10px; border: 1px solid #ddd; outline: none; focus: border-color: var(--primary);">
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <label style="color: var(--text-main); font-weight: 600;">Mot de passe</label>
+            <input type="password" name="password" required style="padding: 12px; border-radius: 10px; border: 1px solid #ddd; outline: none;">
+        </div>
+        
+        <button type="submit" style="background: var(--primary); color: white; padding: 14px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 1rem; box-shadow: 0 4px 15px rgba(230, 0, 126, 0.3);">
+            Se connecter
+        </button>
+    </form>
+    
+    <p style="text-align: center; margin-top: 2rem; color: var(--text-muted);">
+        Pas encore de compte ? <a href="{% url 'signup' %}" style="color: var(--primary); font-weight: bold;">S'inscrire</a>
+    </p>
+</div>
+{% endblock %}

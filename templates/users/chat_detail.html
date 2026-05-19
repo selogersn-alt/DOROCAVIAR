@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+
+{% block title %}Chat avec {{ other_user.username }} - {{ platform.site_name }}{% endblock %}
+
+{% block content %}
+<style>
+    /* Chat Modern & Glassmorphic */
+    .chat-wrapper {
+        height: calc(100vh - 120px);
+        margin: 20px auto;
+        max-width: 900px;
+        display: flex;
+        flex-direction: column;
+        border-radius: 24px;
+        overflow: hidden;
+        border: 1px solid var(--glass-border);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+
+    .chat-header {
+        padding: 15px 25px;
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--glass-border);
+    }
+
+    .chat-messages {
+        flex: 1;
+        padding: 25px;
+        overflow-y: auto;
+        background: rgba(0,0,0,0.2);
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        scroll-behavior: smooth;
+    }
+
+    .msg-bubble {
+        max-width: 75%;
+        padding: 12px 18px;
+        border-radius: 20px;
+        font-size: 0.95rem;
+        position: relative;
+        line-height: 1.5;
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .msg-sent {
+        align-self: flex-end;
+        background: linear-gradient(135deg, #E6007E, #9b59b6);
+        color: white;
+        border-bottom-right-radius: 4px;
+        box-shadow: 0 4px 15px rgba(230, 0, 126, 0.3);
+    }
+
+    .msg-received {
+        align-self: flex-start;
+        background: rgba(255,255,255,0.1);
+        backdrop-filter: blur(5px);
+        color: #fff;
+        border: 1px solid var(--glass-border);
+        border-bottom-left-radius: 4px;
+    }
+
+    .chat-footer {
+        padding: 20px 25px;
+        background: rgba(255, 255, 255, 0.03);
+        border-top: 1px solid var(--glass-border);
+    }
+
+    .chat-input-container {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        background: rgba(255,255,255,0.05);
+        padding: 5px 5px 5px 20px;
+        border-radius: 30px;
+        border: 1px solid var(--glass-border);
+    }
+
+    .chat-input-container textarea {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: white;
+        outline: none;
+        padding: 10px 0;
+        resize: none;
+        max-height: 100px;
+    }
+
+    .btn-send {
+        background: #f39c12;
+        color: white;
+        border: none;
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.2s, background 0.2s;
+    }
+
+    .btn-send:hover { transform: scale(1.1); background: #e67e22; }
+</style>
+
+<div class="chat-wrapper glass">
+    <!-- Header -->
+    <div class="chat-header">
+        <div class="d-flex align-items-center gap-3">
+            <a href="{% url 'chat_list' %}" class="text-white text-decoration-none fs-4">‹</a>
+            <img src="https://ui-avatars.com/api/?name={{ other_user.username }}&background=random" class="rounded-circle" width="40">
+            <div>
+                <div class="fw-bold">{{ other_user.username }}</div>
+                <div class="text-success small">● En ligne</div>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="btn btn-link text-white-50 p-0" data-bs-toggle="dropdown">⋮</button>
+            <ul class="dropdown-menu dropdown-menu-dark">
+                <li><a class="dropdown-item" href="#">Signaler</a></li>
+                <li><a class="dropdown-item text-danger" href="#">Bloquer</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="chat-messages" id="chat-messages-container">
+        {% for msg in chat_messages %}
+        <div class="msg-bubble {% if msg.sender == user %}msg-sent{% else %}msg-received{% endif %}" data-id="{{ msg.id }}">
+            {% if msg.image %}
+                <img src="{{ msg.image.url }}" class="img-fluid rounded-3 mb-2">
+            {% endif %}
+            <div>{{ msg.content }}</div>
+            <div class="text-end small mt-1" style="font-size: 0.7rem; opacity: 0.6;">{{ msg.created_at|date:"H:i" }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Footer Input -->
+    <div class="chat-footer">
+        <form id="chat-form" action="." method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="chat-input-container">
+                <textarea id="chat-content" name="content" placeholder="Écrivez votre message..." rows="1"></textarea>
+                <label for="id_image" class="text-white-50 cursor-pointer mb-0">📎</label>
+                <input type="file" name="image" id="id_image" accept="image/*" class="d-none">
+                <button type="submit" class="btn-send">➤</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const container = document.getElementById('chat-messages-container');
+    container.scrollTop = container.scrollHeight;
+
+    // Polling et Envoi Ajax (Garder la logique existante mais mettre à jour le style des nouveaux messages)
+    // ... (Je réutilise la logique de polling mais avec le nouveau style CSS)
+    let lastId = 0;
+    const bubbles = document.querySelectorAll('.msg-bubble');
+    if (bubbles.length > 0) { lastId = bubbles[bubbles.length - 1].dataset.id; }
+
+    async function pollMessages() {
+        try {
+            const response = await fetch(`poll/?last_id=${lastId}`);
+            const data = await response.json();
+            if (data.messages && data.messages.length > 0) {
+                data.messages.forEach(msg => {
+                    const div = document.createElement('div');
+                    div.className = 'msg-bubble msg-received';
+                    div.dataset.id = msg.id;
+                    let html = '';
+                    if (msg.image) { html += `<img src="${msg.image}" class="img-fluid rounded-3 mb-2">`; }
+                    html += `<div>${msg.content}</div><div class="text-end small mt-1" style="font-size: 0.7rem; opacity: 0.6;">${msg.created_at}</div>`;
+                    div.innerHTML = html;
+                    container.appendChild(div);
+                    lastId = msg.id;
+                });
+                container.scrollTop = container.scrollHeight;
+            }
+        } catch (e) { console.error(e); }
+    }
+    setInterval(pollMessages, 3000);
+
+    const chatForm = document.getElementById('chat-form');
+    chatForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const content = document.getElementById('chat-content').value.trim();
+        if (!content) return;
+        
+        const formData = new FormData(chatForm);
+        document.getElementById('chat-content').value = '';
+
+        const div = document.createElement('div');
+        div.className = 'msg-bubble msg-sent';
+        div.innerHTML = `<div>${content}</div><div class="text-end small mt-1" style="font-size: 0.7rem; opacity: 0.6;">${new Date().getHours()}:${new Date().getMinutes()}</div>`;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+
+        try {
+            await fetch('.', { method: 'POST', body: formData, headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
+        } catch (e) { console.error(e); }
+    };
+</script>
+{% endblock %}

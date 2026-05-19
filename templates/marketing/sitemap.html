@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}Sitemap - Plan du Site | DORO CAVIAR{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-12">
+    <!-- Header -->
+    <div class="text-center mb-12 animate-fade-in">
+        <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight mb-4 text-brand-text">
+            Plan du Site <span class="text-brand-primary">Sitemap</span>
+        </h1>
+        <p class="text-sm md:text-base text-brand-muted max-w-xl mx-auto leading-relaxed">
+            Parcourez l'intégralité de nos contenus exclusifs, catégories thématiques et pages d'informations sur DORO CAVIAR.
+        </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- Categories Section -->
+        <div class="glass-panel p-6 rounded-3xl border border-brand-border/40 shadow-lg hover:border-brand-primary/30 transition-all duration-300">
+            <div class="flex items-center gap-3 mb-6 border-b border-brand-border/20 pb-4">
+                <div class="w-10 h-10 rounded-xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center text-brand-primary">
+                    <i class="fa-solid fa-tags text-lg"></i>
+                </div>
+                <h2 class="text-lg font-bold text-white">Catégories</h2>
+            </div>
+            <ul class="space-y-3.5">
+                {% for category in categories %}
+                <li>
+                    <a href="{% url 'category_detail' category.slug %}" class="group flex items-center justify-between text-sm text-brand-muted hover:text-brand-primary transition-all duration-200">
+                        <span class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-brand-primary/60 group-hover:bg-brand-primary group-hover:scale-125 transition-all"></span>
+                            {{ category.name }}
+                        </span>
+                        <span class="text-[10px] bg-brand-primary/10 text-brand-primary px-2 py-0.5 rounded-full font-bold">
+                            {{ category.videos.count }}
+                        </span>
+                    </a>
+                </li>
+                {% empty %}
+                <li class="text-xs text-brand-muted">Aucune catégorie disponible.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- Latest Videos Section -->
+        <div class="glass-panel p-6 rounded-3xl border border-brand-border/40 shadow-lg hover:border-brand-primary/30 transition-all duration-300 md:col-span-2">
+            <div class="flex items-center gap-3 mb-6 border-b border-brand-border/20 pb-4">
+                <div class="w-10 h-10 rounded-xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center text-brand-primary">
+                    <i class="fa-solid fa-circle-play text-lg"></i>
+                </div>
+                <h2 class="text-lg font-bold text-white">Vidéos Récentes</h2>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto pr-2">
+                {% for video in videos %}
+                <a href="{{ video.get_absolute_url }}" class="group flex gap-3 p-2.5 rounded-2xl bg-white/5 hover:bg-brand-glass border border-transparent hover:border-brand-primary/30 transition-all duration-200">
+                    <div class="w-20 aspect-video rounded-lg overflow-hidden shrink-0 bg-black/40 relative">
+                        <img src="{{ video.thumbnail }}" class="w-full h-full object-cover">
+                    </div>
+                    <div class="min-w-0 flex flex-col justify-center">
+                        <h4 class="text-xs font-bold text-white truncate group-hover:text-brand-primary transition-colors">
+                            {{ video.title }}
+                        </h4>
+                        <span class="text-[10px] text-brand-muted mt-1 flex items-center gap-1">
+                            <i class="fa-solid fa-eye text-[8px]"></i> {{ video.views_count }} vues
+                        </span>
+                    </div>
+                </a>
+                {% empty %}
+                <p class="text-xs text-brand-muted col-span-2">Aucune vidéo disponible.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Pages list -->
+    <div class="mt-8 glass-panel p-6 rounded-3xl border border-brand-border/40 shadow-lg hover:border-brand-primary/30 transition-all duration-300">
+        <div class="flex items-center gap-3 mb-6 border-b border-brand-border/20 pb-4">
+            <div class="w-10 h-10 rounded-xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center text-brand-primary">
+                <i class="fa-regular fa-file-lines text-lg"></i>
+            </div>
+            <h2 class="text-lg font-bold text-white">Pages d'Informations</h2>
+        </div>
+        <div class="flex flex-wrap gap-4">
+            {% for page in pages %}
+            <a href="{% url 'custom_page' page.slug %}" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-brand-glass text-xs font-semibold text-brand-muted hover:text-white border border-brand-border/30 hover:border-brand-primary/30 transition-all">
+                {{ page.title }}
+            </a>
+            {% empty %}
+            <span class="text-xs text-brand-muted">Aucune page d'information disponible.</span>
+            {% endfor %}
+            <a href="/sitemap.xml" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-brand-glass text-xs font-semibold text-brand-muted hover:text-white border border-brand-border/30 hover:border-brand-primary/30 transition-all">
+                Sitemap XML (Moteurs de recherche)
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

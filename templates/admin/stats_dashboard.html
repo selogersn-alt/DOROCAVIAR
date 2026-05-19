@@ -1,0 +1,133 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block content %}
+<style>
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
+    .stat-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #eee; }
+    .stat-card h3 { color: #666; font-size: 0.9rem; margin-top: 0; text-transform: uppercase; letter-spacing: 1px; }
+    .stat-card .value { font-size: 2rem; font-weight: 800; color: #111; margin: 10px 0; }
+    .stat-card .trend { font-size: 0.85rem; }
+    .trend.up { color: #28a745; }
+    
+    .data-table-container { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 30px; }
+    .data-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    .data-table th { text-align: left; padding: 12px; border-bottom: 2px solid #f4f4f4; color: #666; font-size: 0.85rem; }
+    .data-table td { padding: 12px; border-bottom: 1px solid #f4f4f4; color: #333; }
+    
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
+    .badge-danger { background: #fee2e2; color: #991b1b; }
+    .badge-success { background: #dcfce7; color: #166534; }
+</style>
+
+<div id="content-main">
+    <h1 style="margin-bottom: 30px; display: flex; align-items: center; gap: 15px;">
+        <span style="font-size: 2rem;">📊</span> Business Performance Dashboard
+    </h1>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Vues Totales</h3>
+            <div class="value">{{ total_views }}</div>
+            <div class="trend up">▲ Engagement Global</div>
+        </div>
+        <div class="stat-card">
+            <h3>Revenus (Clicks)</h3>
+            <div class="value">{{ total_clicks }}</div>
+            <div class="trend up">▲ Clicks Affiliation</div>
+        </div>
+        <div class="stat-card">
+            <h3>Utilisateurs</h3>
+            <div class="value">{{ total_users }}</div>
+            <div class="trend">+{{ new_users_today }} aujourd'hui</div>
+        </div>
+        <div class="stat-card">
+            <h3>Signalements</h3>
+            <div class="value">{{ pending_reports }}</div>
+            <div class="trend {% if pending_reports > 0 %}badge-danger{% endif %}">{{ pending_reports }} à traiter</div>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+        <!-- Top Categories -->
+        <div class="data-table-container">
+            <h2 style="font-size: 1.1rem; margin-top: 0;">Top Catégories</h2>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Catégorie</th>
+                        <th>Vidéos</th>
+                        <th>Performance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cat in top_categories %}
+                    <tr>
+                        <td><strong>{{ cat.name }}</strong></td>
+                        <td>{{ cat.video_count }}</td>
+                        <td><div style="height: 8px; width: 80%; background: #eee; border-radius: 4px;"><div style="height: 100%; width: 70%; background: var(--primary); border-radius: 4px;"></div></div></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Top Affiliate Links -->
+        <div class="data-table-container">
+            <h2 style="font-size: 1.1rem; margin-top: 0;">Affiliation Marketing</h2>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Campagne</th>
+                        <th>Clicks</th>
+                        <th>Statut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for link in top_links %}
+                    <tr>
+                        <td>{{ link.name }}</td>
+                        <td><strong>{{ link.clicks }}</strong></td>
+                        <td><span class="badge badge-success">Actif</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Recent Reports -->
+    <div class="data-table-container" style="margin-top: 30px;">
+        <h2 style="font-size: 1.1rem; margin-top: 0; color: #991b1b;">Derniers Signalements</h2>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Contenu</th>
+                    <th>Raison</th>
+                    <th>Signalé par</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in recent_reports %}
+                <tr>
+                    <td>
+                        {% if report.video %}Video: {{ report.video.title|truncatechars:30 }}{% endif %}
+                        {% if report.photo %}Photo: {{ report.photo.id }}{% endif %}
+                    </td>
+                    <td><span class="badge badge-danger">{{ report.get_reason_display }}</span></td>
+                    <td>{{ report.reporter.username }}</td>
+                    <td>{{ report.created_at|date:"d/m/Y H:i" }}</td>
+                    <td><a href="/admin/marketing/report/{{ report.id }}/change/" class="button">Modérer</a></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 2rem; color: #999;">Aucun signalement en attente. Bon travail !</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
