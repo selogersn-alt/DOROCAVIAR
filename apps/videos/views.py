@@ -7,7 +7,7 @@ from django.views.generic import ListView, DetailView, CreateView, TemplateView
 from django.views import View
 from django.db.models import Q, F
 from django.contrib import messages
-from .models import Video, Category, Photo, Comment
+from .models import Video, Category, Photo, Comment, VideoHistory
 from .forms import VideoUploadForm, PhotoUploadForm
 from apps.users.models import User
 

@@ -1,29 +1,94 @@
-from storages.backends.s3boto3 import S3Boto3Storage, S3StaticStorage
-from botocore.exceptions import ClientError
+import requests
+import posixpath
+from django.core.files.storage import Storage
+from django.core.files.base import ContentFile
+from django.conf import settings
+from django.utils.deconstruct import deconstructible
 
-class BunnyS3Boto3Storage(S3Boto3Storage):
+@deconstructible
+class BunnyStorage(Storage):
     """
-    Stockage S3 résilient personnalisé pour BunnyCDN.
-    BunnyCDN retourne parfois une erreur 403 Forbidden au lieu d'une erreur 404 Not Found
-    lorsque l'on teste l'existence d'un fichier qui n'existe pas encore.
-    Cette classe intercepte les erreurs 403 et 404 pour éviter de faire planter l'application.
+    Stockage Django personnalisé exploitant l'API REST de BunnyCDN.
+    Permet de contourner complètement les contraintes de l'API S3 de BunnyCDN
+    (comme l'erreur 'S3 API is not enabled' ou les plantages liés à CreateMultipartUpload).
     """
-    def exists(self, name):
-        try:
-            return super().exists(name)
-        except ClientError as e:
-            if e.response['Error']['Code'] in ('404', '403'):
-                return False
-            raise
+    def __init__(self, **kwargs):
+        self.api_key = settings.AWS_SECRET_ACCESS_KEY
+        self.storage_zone = settings.AWS_STORAGE_BUCKET_NAME
+        self.custom_domain = settings.AWS_S3_CUSTOM_DOMAIN
+        self.base_url = "https://storage.bunnycdn.com"
 
-class BunnyS3StaticStorage(S3StaticStorage):
-    """
-    Stockage de fichiers statiques S3 résilient personnalisé pour BunnyCDN.
-    """
+    def _get_api_url(self, name):
+        # Format : https://storage.bunnycdn.com/{storage_zone}/{name}
+        # S'assurer que le nom ne commence pas par un slash pour éviter de doubler les slashes
+        clean_name = name.lstrip('/')
+        return f"{self.base_url}/{self.storage_zone}/{clean_name}"
+
+    def _open(self, name, mode='rb'):
+        name = posixpath.normpath(name).replace('\\', '/')
+        url = self._get_api_url(name)
+        headers = {
+            "AccessKey": self.api_key
+        }
+        # Téléchargement par streaming pour économiser la mémoire
+        response = requests.get(url, headers=headers, stream=True, timeout=60)
+        if response.status_code == 200:
+            return ContentFile(response.content)
+        raise FileNotFoundError(f"Fichier introuvable sur BunnyCDN : {name} (Status: {response.status_code})")
+
+    def _save(self, name, content):
+        name = posixpath.normpath(name).replace('\\', '/')
+        url = self._get_api_url(name)
+        
+        headers = {
+            "AccessKey": self.api_key,
+            "Content-Type": "application/octet-stream"
+        }
+        
+        # Repositionner le pointeur de fichier
+        content.seek(0)
+        
+        # Téléversement en streaming HTTP PUT direct
+        # timeout=1200 secondes (20 minutes) pour tolérer de très grosses vidéos
+        response = requests.put(url, data=content, headers=headers, timeout=1200)
+        
+        if response.status_code not in (200, 201):
+            raise IOError(f"Échec de l'upload sur BunnyCDN : {response.status_code} {response.text}")
+            
+        return name
+
     def exists(self, name):
+        name = posixpath.normpath(name).replace('\\', '/')
+        url = self._get_api_url(name)
+        headers = {
+            "AccessKey": self.api_key
+        }
         try:
-            return super().exists(name)
-        except ClientError as e:
-            if e.response['Error']['Code'] in ('404', '403'):
-                return False
-            raise
+            # HEAD request rapide pour tester l'existence sur BunnyCDN Storage
+            response = requests.head(url, headers=headers, timeout=15)
+            return response.status_code == 200
+        except requests.RequestException:
+            return False
+
+    def delete(self, name):
+        name = posixpath.normpath(name).replace('\\', '/')
+        url = self._get_api_url(name)
+        headers = {
+            "AccessKey": self.api_key
+        }
+        try:
+            requests.delete(url, headers=headers, timeout=15)
+        except requests.RequestException:
+            pass
+
+    def url(self, name):
+        name = posixpath.normpath(name).replace('\\', '/').lstrip('/')
+        # Renvoie l'URL publique délivrée par le CDN
+        return f"https://{self.custom_domain}/{name}"
+
+# Conserver les anciennes classes vides pour éviter des plantages de migration Django si elles sont référencées.
+class BunnyS3Boto3Storage(BunnyStorage):
+    pass
+
+class BunnyS3StaticStorage(Storage):
+    pass

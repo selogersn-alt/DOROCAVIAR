@@ -219,7 +219,7 @@ if USE_BUNNY:
     AWS_S3_FILE_OVERWRITE = False
     
     STORAGES["default"] = {
-        "BACKEND": "apps.videos.storage.BunnyS3Boto3Storage",
+        "BACKEND": "apps.videos.storage.BunnyStorage",
     }
     MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
     
