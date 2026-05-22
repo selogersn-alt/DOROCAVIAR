@@ -2,6 +2,9 @@
 <a 
     href="{{ video.get_absolute_url }}" 
     class="group flex flex-col bg-brand-card hover:bg-brand-glass border border-brand-border/40 hover:border-brand-primary/45 rounded-2xl overflow-hidden transition-all duration-300 shadow-lg hover:shadow-glow hover:-translate-y-1 relative scroll-reveal-card"
+    x-data="{ hoverActive: false }"
+    @mouseenter="hoverActive = true; $refs.previewVideo?.play().catch(e => {})"
+    @mouseleave="hoverActive = false; $refs.previewVideo?.pause(); if($refs.previewVideo) $refs.previewVideo.currentTime = 0;"
     {% if forloop.last and page_obj.has_next %}
     hx-get="?page={{ page_obj.next_page_number }}&ajax=1"
     hx-trigger="revealed"
@@ -32,11 +35,25 @@
             alt="{{ video.title }}" 
             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
             loading="lazy"
+            x-show="!hoverActive"
         >
         {% else %}
-        <div class="w-full h-full bg-brand-primary/10 flex items-center justify-center text-brand-muted text-xs">
+        <div class="w-full h-full bg-brand-primary/10 flex items-center justify-center text-brand-muted text-xs" x-show="!hoverActive">
             <i class="fa-solid fa-video text-3xl"></i>
         </div>
+        {% endif %}
+
+        {% if video.video_file %}
+        <video 
+            x-ref="previewVideo"
+            x-show="hoverActive"
+            src="{{ video.video_file.url }}#t=5.0" 
+            class="absolute inset-0 w-full h-full object-cover bg-black" 
+            loop 
+            muted 
+            playsinline
+            style="display: none;"
+        ></video>
         {% endif %}
     </div>
 

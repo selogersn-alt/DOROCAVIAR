@@ -197,6 +197,8 @@
                     x-ref="videoPlayer"
                     @ended="postRollActive = true"
                     controls 
+                    poster="{{ video.thumbnail }}"
+                    preload="metadata"
                     class="absolute inset-0 w-full h-full object-contain"
                     :style="!dismissed || preRollActive ? 'pointer-events: none;' : ''"
                 >

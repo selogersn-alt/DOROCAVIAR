@@ -41,12 +41,13 @@ class VideoUploadForm(forms.ModelForm):
 
     class Meta:
         model = Video
-        fields = ['title', 'description', 'category', 'video_file', 'embed_url', 'thumbnail', 'is_short']
+        fields = ['title', 'description', 'category', 'video_file', 'thumbnail_file', 'embed_url', 'thumbnail', 'is_short']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Titre de la vidéo'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'De quoi parle votre vidéo ?'}),
             'category': forms.Select(attrs={'class': 'form-control'}),
             'video_file': forms.FileInput(attrs={'class': 'form-control'}),
+            'thumbnail_file': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
             'embed_url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'Ou coller un lien YouTube, Vimeo, etc.'}),
             'thumbnail': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'Lien vers une image miniature'}),
             'is_short': forms.CheckboxInput(attrs={'class': 'form-check-input'}),

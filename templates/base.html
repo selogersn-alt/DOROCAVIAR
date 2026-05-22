@@ -93,6 +93,27 @@
             border: 1px solid var(--glass-border);
         }
 
+        /* Prévenir le flash du menu de gauche (sidebar) au chargement de la page */
+        aside:not(.w-64) {
+            width: 0px !important;
+            transform: translateX(-100%) !important;
+        }
+        @media (min-width: 768px) {
+            aside:not(.w-64) {
+                width: 80px !important;
+                transform: translateX(0) !important;
+            }
+        }
+        /* Masquer le contenu textuel et promotionnel quand le menu est replié */
+        aside:not(.w-64) span,
+        aside:not(.w-64) hr,
+        aside:not(.w-64) .glass-panel,
+        aside:not(.w-64) div:not(.p-3) {
+            display: none !important;
+            opacity: 0 !important;
+        }
+
+
         /* Custom Scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
@@ -452,9 +473,10 @@
         ></div>
 
         <!-- ASIDE / SIDEBAR -->
+        <!-- ASIDE / SIDEBAR -->
         <aside 
             :class="sidebarOpen ? 'w-64 md:w-64 translate-x-0' : 'w-0 -translate-x-full md:w-20 md:translate-x-0'"
-            class="fixed md:sticky top-[70px] bottom-0 md:bottom-auto h-[calc(100vh-70px)] bg-brand-sidebar border-r border-brand-border/40 z-30 overflow-y-auto overflow-x-hidden transition-all duration-300 ease-in-out shrink-0"
+            class="fixed md:sticky top-[70px] bottom-0 md:bottom-auto h-[calc(100vh-70px)] bg-brand-sidebar border-r border-brand-border/40 z-30 overflow-y-auto overflow-x-hidden transition-all duration-300 ease-in-out shrink-0 w-0 -translate-x-full md:w-20 md:translate-x-0"
         >
             <div class="p-3 flex flex-col gap-1.5 w-64">
                 <!-- Navigation Items -->
@@ -463,7 +485,7 @@
                     class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-brand-glass text-brand-text hover:text-brand-primary transition-all duration-200"
                 >
                     <i class="fa-solid fa-house text-lg w-6 text-center"></i>
-                    <span :class="sidebarOpen ? 'opacity-100' : 'md:hidden opacity-0'" class="font-medium text-sm transition-opacity duration-300">Accueil</span>
+                    <span :class="sidebarOpen ? 'opacity-100' : 'md:hidden opacity-0'" class="font-medium text-sm transition-opacity duration-300 md:hidden opacity-0">Accueil</span>
                 </a>
                 
                 <a 
@@ -471,48 +493,48 @@
                     class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-brand-glass text-brand-text hover:text-brand-primary transition-all duration-200"
                 >
                     <i class="fa-solid fa-bolt text-lg w-6 text-center text-amber-500"></i>
-                    <span :class="sidebarOpen ? 'opacity-100' : 'md:hidden opacity-0'" class="font-medium text-sm transition-opacity duration-300">Shorts</span>
+                    <span :class="sidebarOpen ? 'opacity-100' : 'md:hidden opacity-0'" class="font-medium text-sm transition-opacity duration-300 md:hidden opacity-0">Shorts</span>
                 </a>
-
+ 
                 <a 
                     href="{% url 'trending_videos' %}" 
                     class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-brand-glass text-brand-text hover:text-brand-primary transition-all duration-200"
                 >
                     <i class="fa-solid fa-fire text-lg w-6 text-center text-brand-primary"></i>
-                    <span :class="sidebarOpen ? 'opacity-100' : 'md:hidden opacity-0'" class="font-medium text-sm transition-opacity duration-300">Tendances</span>
+                    <span :class="sidebarOpen ? 'opacity-100' : 'md:hidden opacity-0'" class="font-medium text-sm transition-opacity duration-300 md:hidden opacity-0">Tendances</span>
                 </a>
-
+ 
                 {% if user.is_authenticated %}
                 <a 
                     href="{% url 'chat_list' %}" 
                     class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-brand-glass text-brand-text hover:text-brand-primary transition-all duration-200"
                 >
                     <i class="fa-regular fa-comment-dots text-lg w-6 text-center"></i>
-                    <span :class="sidebarOpen ? 'opacity-100' : 'md:hidden opacity-0'" class="font-medium text-sm transition-opacity duration-300">Messages</span>
+                    <span :class="sidebarOpen ? 'opacity-100' : 'md:hidden opacity-0'" class="font-medium text-sm transition-opacity duration-300 md:hidden opacity-0">Messages</span>
                 </a>
                 {% endif %}
-
+ 
                 <a 
                     href="{% url 'library' %}" 
                     class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-brand-glass text-brand-text hover:text-brand-primary transition-all duration-200"
                 >
                     <i class="fa-solid fa-box-archive text-lg w-6 text-center"></i>
-                    <span :class="sidebarOpen ? 'opacity-100' : 'md:hidden opacity-0'" class="font-medium text-sm transition-opacity duration-300">Bibliothèque</span>
+                    <span :class="sidebarOpen ? 'opacity-100' : 'md:hidden opacity-0'" class="font-medium text-sm transition-opacity duration-300 md:hidden opacity-0">Bibliothèque</span>
                 </a>
-
+ 
                 <a 
                     href="{% url 'blog:post_list' %}" 
                     class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-brand-glass text-brand-text hover:text-brand-primary transition-all duration-200"
                 >
                     <i class="fa-regular fa-newspaper text-lg w-6 text-center"></i>
-                    <span :class="sidebarOpen ? 'opacity-100' : 'md:hidden opacity-0'" class="font-medium text-sm transition-opacity duration-300">Blog</span>
+                    <span :class="sidebarOpen ? 'opacity-100' : 'md:hidden opacity-0'" class="font-medium text-sm transition-opacity duration-300 md:hidden opacity-0">Blog</span>
                 </a>
-
+ 
                 <!-- SIDEBAR ADVERTISEMENT / PROMO -->
                 {% if not user.is_pro %}
                 <div 
                     :class="sidebarOpen ? 'block' : 'hidden'" 
-                    class="mt-4 p-4 rounded-2xl glass-panel border border-brand-border/40 text-center bg-gradient-to-br from-brand-primary/5 to-brand-secondary/5 transition-opacity"
+                    class="mt-4 p-4 rounded-2xl glass-panel border border-brand-border/40 text-center bg-gradient-to-br from-brand-primary/5 to-brand-secondary/5 transition-opacity hidden"
                 >
                     <span class="inline-block text-[9px] uppercase tracking-wider text-amber-500 font-extrabold mb-2.5">💎 Offre VIP Pro</span>
                     <p class="text-xs text-brand-text font-bold mb-3">Zéro Publicité à vie</p>
@@ -523,17 +545,17 @@
                 {% else %}
                 <div 
                     :class="sidebarOpen ? 'block' : 'hidden'" 
-                    class="mt-4 p-4 rounded-2xl glass-panel border border-amber-500/30 text-center bg-gradient-to-br from-amber-500/10 to-brand-card/50 transition-opacity"
+                    class="mt-4 p-4 rounded-2xl glass-panel border border-amber-500/30 text-center bg-gradient-to-br from-amber-500/10 to-brand-card/50 transition-opacity hidden"
                 >
                     <span class="inline-block text-[9px] uppercase tracking-wider text-amber-400 font-black mb-1.5"><i class="fa-solid fa-gem mr-1"></i> MEMBRE VIP PRO</span>
                     <p class="text-[10px] text-brand-muted font-semibold leading-relaxed">Toutes les publicités sont bloquées. Merci de votre soutien ! 💖</p>
                 </div>
                 {% endif %}
-
+ 
                 <hr class="border-brand-border/20 my-4">
                 
                 <!-- Category Section -->
-                <div :class="sidebarOpen ? 'block' : 'md:hidden'" class="px-4 mb-2 text-xs font-extrabold uppercase tracking-wider text-brand-muted/75">
+                <div :class="sidebarOpen ? 'block' : 'md:hidden'" class="px-4 mb-2 text-xs font-extrabold uppercase tracking-wider text-brand-muted/75 md:hidden">
                     Catégories
                 </div>
                 <a 
@@ -541,7 +563,7 @@
                     class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-brand-glass text-brand-text hover:text-brand-primary transition-all duration-200"
                 >
                     <i class="fa-regular fa-folder-open text-lg w-6 text-center"></i>
-                    <span :class="sidebarOpen ? 'opacity-100' : 'md:hidden opacity-0'" class="font-medium text-sm transition-opacity duration-300">Parcourir</span>
+                    <span :class="sidebarOpen ? 'opacity-100' : 'md:hidden opacity-0'" class="font-medium text-sm transition-opacity duration-300 md:hidden opacity-0">Parcourir</span>
                 </a>
             </div>
         </aside>
@@ -719,7 +741,8 @@
         }
     </style>
 
-    <!-- Interactive Connection Inducement Banner for Visitors -->
+    <!-- Interactive Connection Inducement Banner for Visitors - Disabled as requested -->
+    {#
     {% if not user.is_authenticated %}
     <div 
         x-data="{ showBanner: true }"
@@ -755,6 +778,7 @@
         </div>
     </div>
     {% endif %}
+    #}
 
     <!-- Popunders injected by Admin -->
     {% for ad in ads_popunders %}

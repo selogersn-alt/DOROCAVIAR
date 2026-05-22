@@ -114,7 +114,7 @@ def process_uploaded_video_task(video_id):
             print(f"Génération de la miniature automatique pour {video.title}...")
             thumb_cmd = [
                 'ffmpeg', '-y', '-i', input_path,
-                '-ss', '00:00:01', '-vframes', '1',
+                '-ss', '00:00:05', '-vframes', '1',
                 thumb_path
             ]
             process_thumb = subprocess.run(thumb_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
