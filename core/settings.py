@@ -52,21 +52,25 @@ CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[
     'http://*.dorocaviar.com',
     'https://157.180.127.70',
     'http://157.180.127.70',
+    'http://157.180.127.70:8000',
+    'https://157.180.127.70:8000',
     'http://157.180.127.70:8005',
     'https://157.180.127.70:8005',
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
 ])
 
 if not DEBUG:
     # HSTS
-    SECURE_HSTS_SECONDS = 31536000 # 1 an
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
+    SECURE_HSTS_SECONDS = env.int('SECURE_HSTS_SECONDS', default=31536000) # 1 an
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=True)
+    SECURE_HSTS_PRELOAD = env.bool('SECURE_HSTS_PRELOAD', default=True)
     
     # Redirection HTTPS et Cookies derrière Proxy (Cloudflare, DigitalOcean)
-    SECURE_SSL_REDIRECT = True
+    SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=True)
     
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=True)
+    CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=True)
     
     # Headers de protection
     SECURE_BROWSER_XSS_FILTER = True

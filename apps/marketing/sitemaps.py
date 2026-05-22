@@ -12,8 +12,7 @@ class VideoSitemap(Sitemap):
         return obj.updated_at
 
     def location(self, obj):
-        from django.urls import reverse
-        return reverse('video_detail', args=[obj.slug])
+        return obj.get_absolute_url()
 
 class CategorySitemap(Sitemap):
     changefreq = "weekly"

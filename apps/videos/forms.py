@@ -1,5 +1,33 @@
+import re
 from django import forms
 from .models import Video, Photo, Category, Comment
+
+def check_spam(text):
+    if not text:
+        return None
+        
+    # 1. Check for links to prevent bots from dropping spam sites
+    url_pattern = re.compile(
+        r'https?://\S+|www\.\S+|t\.me/\S+|wa\.me/\S+|viber://\S+|bit\.ly/\S+|tinyurl\.com/\S+', 
+        re.IGNORECASE
+    )
+    if url_pattern.search(text):
+        return "Les liens externes (http, https, www, telegram, whatsapp) ne sont pas autorisés afin de prévenir le spam et les publicités."
+        
+    # 2. Check for spam/advertising keywords (case-insensitive)
+    spam_keywords = [
+        r'1x\s*bet', r'mel\s*bet', r'line\s*bet', r'casino', r'crypto', r'telegram', r'whatsapp',
+        r'argent\s+facile', r'rencontre\s+sexe', r'sexcam', r'webcam', r'escort', r'gagner\s+de\s+l\'argent',
+        r'devenir\s+riche', r'doubler\s+votre', r'pari\s+en\s+ligne', r'paris\s+en\s+ligne', r'bet\s+en\s+ligne',
+        r'sexe\s+gratuit', r'cam\s+sexe', r'sex\s+cam', r'argent\s+rapide', r'gagner\s+gros', r'investir\s+petit',
+        r'gains\s+garantis', r'code\s+promo', r'promo\s+code', r'bon\s+plan\s+argent'
+    ]
+    
+    for pattern in spam_keywords:
+        if re.search(pattern, text, re.IGNORECASE):
+            return "Le contenu contient des mots-clés promotionnels ou de spam interdits (paris en ligne, casino, crypto, démarchage, etc.)."
+            
+    return None
 
 class VideoUploadForm(forms.ModelForm):
     class Meta:
@@ -14,6 +42,20 @@ class VideoUploadForm(forms.ModelForm):
             'thumbnail': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'Lien vers une image miniature'}),
             'is_short': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+
+    def clean_title(self):
+        title = self.cleaned_data.get('title', '')
+        spam_error = check_spam(title)
+        if spam_error:
+            raise forms.ValidationError(spam_error)
+        return title
+
+    def clean_description(self):
+        description = self.cleaned_data.get('description', '')
+        spam_error = check_spam(description)
+        if spam_error:
+            raise forms.ValidationError(spam_error)
+        return description
 
     def clean(self):
         cleaned_data = super().clean()
@@ -35,6 +77,13 @@ class PhotoUploadForm(forms.ModelForm):
             'category': forms.Select(attrs={'class': 'form-control'}),
         }
 
+    def clean_title(self):
+        title = self.cleaned_data.get('title', '')
+        spam_error = check_spam(title)
+        if spam_error:
+            raise forms.ValidationError(spam_error)
+        return title
+
 class CommentForm(forms.ModelForm):
     class Meta:
         model = Comment
@@ -43,7 +92,14 @@ class CommentForm(forms.ModelForm):
             'content': forms.Textarea(attrs={
                 'class': 'form-control', 
                 'rows': 3, 
-                'placeholder': 'Ajouter un commentaire publiques...',
+                'placeholder': 'Ajouter un commentaire publique...',
                 'style': 'resize: none; border-radius: 15px;'
             }),
         }
+
+    def clean_content(self):
+        content = self.cleaned_data.get('content', '')
+        spam_error = check_spam(content)
+        if spam_error:
+            raise forms.ValidationError(spam_error)
+        return content
