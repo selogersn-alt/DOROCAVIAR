@@ -68,7 +68,7 @@ def process_uploaded_video_task(video_id):
 
     try:
         input_path = video.video_file.path
-    except (NotImplementedError, AttributeError):
+    except (NotImplementedError, AttributeError, ValueError):
         # Stockage distant (BunnyCDN, S3) : on télécharge localement
         temp_input = tempfile.NamedTemporaryFile(suffix=os.path.splitext(video.video_file.name)[1], delete=False)
         try:

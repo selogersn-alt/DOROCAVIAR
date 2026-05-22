@@ -30,6 +30,15 @@ def check_spam(text):
     return None
 
 class VideoUploadForm(forms.ModelForm):
+    website_confirm = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'style': 'display:none !important; position:absolute; left:-9999px;',
+            'tabindex': '-1',
+            'autocomplete': 'off'
+        })
+    )
+
     class Meta:
         model = Video
         fields = ['title', 'description', 'category', 'video_file', 'embed_url', 'thumbnail', 'is_short']
@@ -59,6 +68,9 @@ class VideoUploadForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        if cleaned_data.get('website_confirm'):
+            raise forms.ValidationError("Spam détecté.")
+            
         video_file = cleaned_data.get('video_file')
         embed_url = cleaned_data.get('embed_url')
 
@@ -69,6 +81,15 @@ class VideoUploadForm(forms.ModelForm):
         return cleaned_data
 
 class PhotoUploadForm(forms.ModelForm):
+    website_confirm = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'style': 'display:none !important; position:absolute; left:-9999px;',
+            'tabindex': '-1',
+            'autocomplete': 'off'
+        })
+    )
+
     class Meta:
         model = Photo
         fields = ['title', 'image', 'category']
@@ -83,6 +104,12 @@ class PhotoUploadForm(forms.ModelForm):
         if spam_error:
             raise forms.ValidationError(spam_error)
         return title
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('website_confirm'):
+            raise forms.ValidationError("Spam détecté.")
+        return cleaned_data
 
 class CommentForm(forms.ModelForm):
     class Meta:

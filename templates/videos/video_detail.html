@@ -647,6 +647,7 @@
             >
                 {% csrf_token %}
                 <input type="hidden" name="video_id" value="{{ video.id }}">
+                <input type="text" name="website_confirm" style="display:none !important;" autocomplete="off" tabindex="-1">
                 
                 <div class="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-brand-border">
                     {% if user.profile_image %}

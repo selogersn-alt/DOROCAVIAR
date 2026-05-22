@@ -225,11 +225,24 @@ class PhotoCreateView(LoginRequiredMixin, CreateView):
 
 class AddCommentView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
+        # 1. Honeypot anti-spam check
+        if request.POST.get('website_confirm'):
+            return HttpResponse("Spam détecté.", status=400)
+
         content = request.POST.get('content')
         if not content:
             if request.headers.get('HX-Request'):
                 return HttpResponse("Le commentaire ne peut pas être vide.", status=400)
             messages.error(request, "Le commentaire ne peut pas être vide.")
+            return redirect(request.META.get('HTTP_REFERER', '/'))
+
+        # 2. Link & keyword spam filter
+        from .forms import check_spam
+        spam_error = check_spam(content)
+        if spam_error:
+            if request.headers.get('HX-Request'):
+                return HttpResponse(spam_error, status=400)
+            messages.error(request, spam_error)
             return redirect(request.META.get('HTTP_REFERER', '/'))
             
         video_id = request.POST.get('video_id')
