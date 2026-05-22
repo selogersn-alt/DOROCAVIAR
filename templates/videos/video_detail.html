@@ -203,25 +203,54 @@
                     <source src="{{ video.video_file.url }}" type="video/mp4">
                     Votre navigateur ne supporte pas la lecture de vidéos.
                 </video>
+            {% elif video.get_embed_url %}
+                {% with embed=video.get_embed_url %}
+                    {% if "<iframe" in embed or "<embed" in embed or "<object" in embed %}
+                        <!-- Code HTML iframe brut (injecté via admin) -->
+                        <div 
+                            class="absolute inset-0 w-full h-full [&_iframe]:absolute [&_iframe]:inset-0 [&_iframe]:w-full [&_iframe]:h-full [&_iframe]:border-0"
+                            :class="!dismissed || preRollActive ? 'pointer-events-none' : ''"
+                        >
+                            {{ embed|safe }}
+                        </div>
+                    {% else %}
+                        <!-- URL d'embed convertie automatiquement -->
+                        <iframe 
+                            id="real-player"
+                            src="{{ embed }}" 
+                            class="absolute inset-0 w-full h-full border-0" 
+                            :class="!dismissed || preRollActive ? 'pointer-events-none' : ''"
+                            referrerpolicy="strict-origin-when-cross-origin"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowfullscreen
+                        ></iframe>
+                    {% endif %}
+                {% endwith %}
             {% else %}
-                {% if "<iframe" in video.embed_url|lower or "<embed" in video.embed_url|lower or "<object" in video.embed_url|lower %}
-                    <div 
-                        class="absolute inset-0 w-full h-full [&_iframe]:absolute [&_iframe]:inset-0 [&_iframe]:w-full [&_iframe]:h-full [&_iframe]:border-0"
-                        :class="!dismissed || preRollActive ? 'pointer-events-none' : ''"
-                    >
-                        {{ video.embed_url|safe }}
+                <!-- Fallback : aucun embed disponible — lien vers la source -->
+                <div class="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-black/80 text-center p-8">
+                    {% if video.thumbnail %}
+                        <img src="{{ video.thumbnail }}" class="absolute inset-0 w-full h-full object-cover opacity-20 filter blur-md" alt="">
+                    {% endif %}
+                    <div class="relative z-10 flex flex-col items-center gap-5">
+                        <div class="w-20 h-20 rounded-full bg-brand-primary/20 border border-brand-primary/50 flex items-center justify-center">
+                            <i class="fa-solid fa-film text-3xl text-brand-primary"></i>
+                        </div>
+                        <p class="text-white font-bold text-base">La vidéo ne peut pas être lue ici</p>
+                        <p class="text-brand-muted text-xs max-w-xs">Le contenu est hébergé sur une plateforme externe. Cliquez ci-dessous pour y accéder directement.</p>
+                        {% if video.source_url %}
+                            <a href="{{ video.source_url }}" target="_blank" rel="noopener noreferrer"
+                               class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-brand-primary to-brand-secondary text-white font-bold text-sm rounded-full active:scale-95 transition-all shadow-glow hover:shadow-[0_0_20px_rgba(230,0,126,0.5)]">
+                                <i class="fa-solid fa-external-link-alt"></i> Voir sur la source
+                            </a>
+                        {% elif video.embed_url %}
+                            <a href="{{ video.embed_url }}" target="_blank" rel="noopener noreferrer"
+                               class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-brand-primary to-brand-secondary text-white font-bold text-sm rounded-full active:scale-95 transition-all shadow-glow">
+                                <i class="fa-solid fa-external-link-alt"></i> Voir la vidéo
+                            </a>
+                        {% endif %}
                     </div>
-                {% else %}
-                    <iframe 
-                        id="real-player"
-                        src="{{ video.embed_url }}" 
-                        class="absolute inset-0 w-full h-full border-0" 
-                        :class="!dismissed || preRollActive ? 'pointer-events-none' : ''"
-                        referrerpolicy="strict-origin-when-cross-origin"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowfullscreen
-                    ></iframe>
-                {% endif %}
+                </div>
             {% endif %}
 
             <!-- Quality Settings Dropdown -->

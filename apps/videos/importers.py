@@ -12,9 +12,9 @@ class BaseImporter:
 
     def save_video(self, video_data):
         """Logique anti-doublons: on se base sur l'URL de l'embed ou la source."""
-        embed_url = video_data.get('embed_url')
+        embed_url = video_data.get('embed_url') or video_data.get('source_url')
         if not embed_url:
-            return False, "Pas d'URL d'embed"
+            return False, "Pas d'URL d'embed ou de source"
 
         # Anti-doublons: chercher si la vidéo existe déjà
         video, created = Video.objects.get_or_create(
@@ -115,11 +115,11 @@ class ScrapingImporter(BaseImporter):
                 # Ici on peut soit générer un embed type YouTube/Pornhub si on reconnaît l'URL,
                 # soit prévoir une deuxième passe de visite de la page source_url.
                 
-                # Logique simplifiée de transformation d'URL en Embed
+                # La conversion en embed propre est maintenant gérée dans Video.save()
                 if source_url:
-                    video_data['embed_url'] = self.convert_to_embed(source_url)
+                    video_data['embed_url'] = source_url
 
-                if video_data.get('embed_url'):
+                if video_data.get('embed_url') or video_data.get('source_url'):
                     created, obj = self.save_video(video_data)
                     if created:
                         videos_added += 1
@@ -128,15 +128,6 @@ class ScrapingImporter(BaseImporter):
                 continue
                 
         return {"added": videos_added, "processed": len(items)}
-
-    def convert_to_embed(self, url):
-        """Tente de transformer une URL classique en URL d'intégration."""
-        if 'youtube.com/watch?v=' in url:
-            return url.replace('watch?v=', 'embed/')
-        if 'vimeo.com/' in url:
-            return url.replace('vimeo.com/', 'player.vimeo.com/video/')
-        # On peut ajouter d'autres patterns ici
-        return None
 
 def trigger_import_task(source_id):
     source = ImportSource.objects.get(id=source_id)

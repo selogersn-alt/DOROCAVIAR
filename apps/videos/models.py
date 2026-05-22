@@ -67,35 +67,128 @@ class Video(models.Model):
             return reverse('video_detail', kwargs={'category_slug': self.category.slug, 'slug': self.slug})
         return reverse('video_detail_no_cat', kwargs={'slug': self.slug})
 
+    @staticmethod
+    def convert_url_to_embed(url):
+        """
+        Convertit une URL de page vidéo en URL d'intégration (embed) valide.
+        Supporte YouTube, Vimeo, Dailymotion, XVideos, XHamster, Pornhub, RedTube, etc.
+        Retourne l'URL d'embed propre ou None si non reconnu.
+        """
+        if not url:
+            return None
+        url = url.strip()
+
+        # Déjà un iframe HTML -> on ne touche pas
+        if url.startswith("<"):
+            return url
+
+        from urllib.parse import urlparse, parse_qs
+
+        # --- YouTube ---
+        if "youtube.com/watch" in url:
+            parsed = urlparse(url)
+            video_id = parse_qs(parsed.query).get('v', [None])[0]
+            if video_id:
+                return f"https://www.youtube.com/embed/{video_id}"
+        elif "youtu.be/" in url:
+            video_id = url.split("youtu.be/")[-1].split("?")[0]
+            if video_id:
+                return f"https://www.youtube.com/embed/{video_id}"
+        elif "youtube.com/embed/" in url:
+            return url  # Déjà bon
+
+        # --- Vimeo ---
+        elif "vimeo.com" in url and "player.vimeo.com" not in url:
+            video_id = url.split("vimeo.com/")[-1].split("?")[0]
+            if video_id.isdigit():
+                return f"https://player.vimeo.com/video/{video_id}"
+
+        # --- Dailymotion ---
+        elif "dailymotion.com/video/" in url:
+            video_id = url.split("/video/")[-1].split("_")[0].split("?")[0]
+            if video_id:
+                return f"https://www.dailymotion.com/embed/video/{video_id}"
+        elif "dailymotion.com/embed" in url:
+            return url
+
+        # --- XVideos ---
+        elif "xvideos.com" in url:
+            # Format: /video.XXXXXXX/slug -> embedframe/XXXXXXX
+            import re
+            # Essayer d'extraire l'ID depuis video.XXXXXXX
+            match = re.search(r'/video\.([a-z0-9]+)/', url)
+            if match:
+                video_id = match.group(1)
+                return f"https://www.xvideos.com/embedframe/{video_id}"
+            # Déjà une URL embed
+            if "embedframe" in url:
+                return url
+
+        # --- XHamster ---
+        elif "xhamster.com" in url:
+            # Format: /videos/slug-XXXXXXX -> /xembed.php?video=XXXXXXX
+            import re
+            match = re.search(r'-(\d+)$', url.rstrip('/').split('?')[0])
+            if match:
+                video_id = match.group(1)
+                return f"https://xhamster.com/xembed.php?video={video_id}"
+            if "xembed" in url:
+                return url
+
+        # --- Pornhub ---
+        elif "pornhub.com" in url:
+            parsed = urlparse(url)
+            params = parse_qs(parsed.query)
+            video_id = params.get('viewkey', [None])[0]
+            if video_id:
+                return f"https://www.pornhub.com/embed/{video_id}"
+            if "/embed/" in url:
+                return url
+
+        # --- RedTube ---
+        elif "redtube.com" in url:
+            import re
+            match = re.search(r'redtube\.com/(\d+)', url)
+            if match:
+                video_id = match.group(1)
+                return f"https://embed.redtube.com/?id={video_id}&bgcolor=000000"
+
+        # --- Tube8 ---
+        elif "tube8.com" in url:
+            import re
+            match = re.search(r'tube8\.com/[^/]+/[^/]+/(\d+)', url)
+            if match:
+                video_id = match.group(1)
+                return f"https://www.tube8.com/embed/{video_id}/"
+
+        # URL non reconnue - retourner None pour signaler qu'on ne sait pas intégrer
+        return None
+
+    @property
+    def get_embed_url(self):
+        """Retourne l'URL d'embed prête à l'emploi pour le template."""
+        if self.video_file:
+            return None  # On utilise le player <video> natif
+        if not self.embed_url:
+            return None
+        converted = self.convert_url_to_embed(self.embed_url)
+        return converted or self.embed_url  # Fallback sur l'URL brute
+
     def save(self, *args, **kwargs):
         if not self.meta_title:
             self.meta_title = self.title
-            
-        # Formater l'url d'intégration si c'est YouTube ou Vimeo (et que ce n'est pas un code HTML d'iframe)
-        if self.embed_url:
-            url = self.embed_url.strip()
-            if not url.startswith("<"):
-                if "youtube.com/watch" in url or "youtu.be" in url or "youtube.com/embed" in url:
-                    video_id = None
-                    if "youtube.com/watch" in url:
-                        from urllib.parse import urlparse, parse_qs
-                        parsed = urlparse(url)
-                        video_id = parse_qs(parsed.query).get('v', [None])[0]
-                    elif "youtu.be/" in url:
-                        video_id = url.split("youtu.be/")[-1].split("?")[0]
-                    elif "youtube.com/embed/" in url:
-                        video_id = url.split("youtube.com/embed/")[-1].split("?")[0]
-                        
-                    if video_id:
-                        self.embed_url = f"https://www.youtube.com/embed/{video_id}"
-                        if not self.thumbnail:
-                            self.thumbnail = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
-                            
-                elif "vimeo.com" in url and "player.vimeo.com" not in url:
-                    video_id = url.split("vimeo.com/")[-1].split("?")[0]
-                    if video_id.isdigit():
-                        self.embed_url = f"https://player.vimeo.com/video/{video_id}"
-                    
+
+        # Convertir l'embed_url en URL d'intégration propre pour toutes les plateformes
+        if self.embed_url and not self.embed_url.strip().startswith("<"):
+            converted = self.convert_url_to_embed(self.embed_url)
+            if converted:
+                self.embed_url = converted
+
+                # Auto-miniature YouTube
+                if "youtube.com/embed/" in self.embed_url and not self.thumbnail:
+                    video_id = self.embed_url.split("/embed/")[-1].split("?")[0]
+                    self.thumbnail = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
+
         # Mettre à jour l'URL textuelle de la miniature si on a une miniature sous forme de fichier local/distant
         if self.thumbnail_file and (not self.thumbnail or self.thumbnail != self.thumbnail_file.url):
             self.thumbnail = self.thumbnail_file.url
@@ -166,11 +259,13 @@ class VideoHistory(models.Model):
 
 @receiver(post_save, sender=Video)
 def trigger_video_processing(sender, instance, created, **kwargs):
-    """Déclenche la tâche Celery de traitement vidéo après l'enregistrement."""
+    """Déclenche le traitement vidéo après l'enregistrement."""
     if getattr(instance, '_ffmpeg_processed', False):
         return
     if instance.video_file:
         # Importer ici pour éviter les imports circulaires
         from .tasks import process_uploaded_video_task
-        # Exécuter après la validation de la transaction SQL
-        transaction.on_commit(lambda: process_uploaded_video_task.delay(instance.id))
+        import threading
+        # Exécuter dans un thread séparé après la validation de la transaction SQL
+        # pour éviter de bloquer l'interface et de dépendre de Celery/Redis
+        transaction.on_commit(lambda: threading.Thread(target=process_uploaded_video_task, args=(instance.id,)).start())

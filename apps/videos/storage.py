@@ -13,13 +13,14 @@ class BunnyStorage(Storage):
     (comme l'erreur 'S3 API is not enabled' ou les plantages liés à CreateMultipartUpload).
     """
     def __init__(self, **kwargs):
-        self.api_key = settings.AWS_SECRET_ACCESS_KEY
-        self.storage_zone = settings.AWS_STORAGE_BUCKET_NAME
-        self.custom_domain = settings.AWS_S3_CUSTOM_DOMAIN
-        self.base_url = "https://storage.bunnycdn.com"
+        self.api_key = getattr(settings, 'AWS_SECRET_ACCESS_KEY', None)
+        self.storage_zone = getattr(settings, 'AWS_STORAGE_BUCKET_NAME', None)
+        self.custom_domain = getattr(settings, 'AWS_S3_CUSTOM_DOMAIN', None)
+        # Utiliser l'endpoint du CDN depuis les settings (défini par BUNNY_STORAGE_ENDPOINT dans .env)
+        self.base_url = getattr(settings, 'AWS_S3_ENDPOINT_URL', "https://storage.bunnycdn.com").rstrip('/')
 
     def _get_api_url(self, name):
-        # Format : https://storage.bunnycdn.com/{storage_zone}/{name}
+        # Format : https://endpoint/{storage_zone}/{name}
         # S'assurer que le nom ne commence pas par un slash pour éviter de doubler les slashes
         clean_name = name.lstrip('/')
         return f"{self.base_url}/{self.storage_zone}/{clean_name}"
