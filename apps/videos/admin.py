@@ -41,21 +41,26 @@ class CategoryAdmin(admin.ModelAdmin):
             count = 0
             for row in reader:
                 if not row: continue
-                name = row[0]
-                description = row[1] if len(row) > 1 else ""
-                parent_slug = row[2].strip() if len(row) > 2 and row[2] else None
-                
-                parent = None
-                if parent_slug:
-                    parent = Category.objects.filter(slug=parent_slug).first()
-                
-                _, created = Category.objects.update_or_create(
-                    name=name,
-                    defaults={'description': description, 'parent': parent}
-                )
-                if created: count += 1
+                try:
+                    name = row[0].strip()
+                    if not name: continue
+                    description = row[1].strip() if len(row) > 1 else ""
+                    parent_slug = row[2].strip() if len(row) > 2 and row[2] else None
+                    
+                    parent = None
+                    if parent_slug:
+                        parent = Category.objects.filter(slug=parent_slug).first()
+                    
+                    _, created = Category.objects.update_or_create(
+                        name=name,
+                        defaults={'description': description, 'parent': parent}
+                    )
+                    if created: count += 1
+                except Exception as e:
+                    self.message_user(request, f"Erreur ignorée sur la ligne {row}: {str(e)}", messages.WARNING)
+                    continue
             
-            self.message_user(request, f"Importation réussie : {count} nouvelles catégories créées.")
+            self.message_user(request, f"Importation terminée : {count} nouvelles catégories créées.")
             return redirect("..")
             
         return render(request, "admin/videos/category/import_csv.html", {"title": "Importer Catégories"})
@@ -142,27 +147,49 @@ class VideoAdmin(admin.ModelAdmin):
                     for row in reader:
                         if not row:
                             continue
-                        title = row[0].strip()
-                        url = row[1].strip() if len(row) > 1 else ""
-                        desc = row[2].strip() if len(row) > 2 else ""
-                        
-                        if url:
-                            embed_url, thumbnail_url, fallback_title = self._parse_video_url(url)
-                            if not title:
-                                title = fallback_title
-                                
-                            Video.objects.create(
-                                title=title,
-                                description=desc,
-                                embed_url=embed_url,
-                                thumbnail=thumbnail_url,
-                                category=category,
-                                uploader=uploader,
-                                is_published=True
-                            )
-                            imported_count += 1
+                        try:
+                            title = row[0].strip()
+                            url = row[1].strip() if len(row) > 1 else ""
+                            desc = row[2].strip() if len(row) > 2 else ""
+                            
+                            if url:
+                                embed_url, thumbnail_url, fallback_title = self._parse_video_url(url)
+                                if not title:
+                                    title = fallback_title
+                                    
+                                Video.objects.create(
+                                    title=title,
+                                    description=desc,
+                                    embed_url=embed_url,
+                                    thumbnail=thumbnail_url,
+                                    category=category,
+                                    uploader=uploader,
+                                    is_published=True
+                                )
+                                imported_count += 1
+                        except Exception as e:
+                            self.message_user(request, f"Erreur ignorée sur la ligne {row}: {str(e)}", messages.WARNING)
+                            continue
                 else:
                     self.message_user(request, "Le fichier fourni n'est pas un CSV valide.", messages.ERROR)
+
+            # Traiter les fichiers vidéos uploadés manuellement (Option C)
+            for i in range(1, 11):
+                video_file = request.FILES.get(f"file_{i}")
+                title = request.POST.get(f"title_{i}")
+                tags = request.POST.get(f"tags_{i}")
+                
+                if video_file and title:
+                    vid = Video.objects.create(
+                        title=title.strip(),
+                        video_file=video_file,
+                        category=category,
+                        uploader=uploader,
+                        is_published=True
+                    )
+                    if tags:
+                        vid.tags.add(*[t.strip() for t in tags.split(',') if t.strip()])
+                    imported_count += 1
 
             self.message_user(request, f"Importation réussie : {imported_count} vidéos ont été créées avec succès.")
             return redirect("..")

@@ -78,8 +78,8 @@ class Video(models.Model):
             return None
         url = url.strip()
 
-        # Déjà un iframe HTML -> on ne touche pas
-        if url.startswith("<"):
+        # Déjà un iframe HTML -> on ne touche pas (avec sécurité anti-XSS basique)
+        if url.lower().startswith("<iframe") and "javascript:" not in url.lower():
             return url
 
         from urllib.parse import urlparse, parse_qs
@@ -265,7 +265,5 @@ def trigger_video_processing(sender, instance, created, **kwargs):
     if instance.video_file:
         # Importer ici pour éviter les imports circulaires
         from .tasks import process_uploaded_video_task
-        import threading
-        # Exécuter dans un thread séparé après la validation de la transaction SQL
-        # pour éviter de bloquer l'interface et de dépendre de Celery/Redis
-        transaction.on_commit(lambda: threading.Thread(target=process_uploaded_video_task, args=(instance.id,)).start())
+        # Exécuter dans une tâche Celery asynchrone après la validation de la transaction SQL
+        transaction.on_commit(lambda: process_uploaded_video_task.delay(instance.id))

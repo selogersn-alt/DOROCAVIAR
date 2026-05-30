@@ -29,11 +29,14 @@ environ.Env.read_env(BASE_DIR / '.env')
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env('SECRET_KEY', default='django-insecure-g-v834+yv$1%h&gmgy_0c$peejr$zwamo*4(hk!da&*5=c&%o*')
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool('DEBUG', default=True)
+
+# SECURITY WARNING: keep the secret key used in production secret!
+if DEBUG:
+    SECRET_KEY = env('SECRET_KEY', default='django-insecure-g-v834+yv$1%h&gmgy_0c$peejr$zwamo*4(hk!da&*5=c&%o*')
+else:
+    SECRET_KEY = env('SECRET_KEY')
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
 if DEBUG:
@@ -332,6 +335,10 @@ JAZZMIN_UI_TWEAKS = {
 }
 
 # Stripe Configurations
-STRIPE_PUBLIC_KEY = env('STRIPE_PUBLIC_KEY', default='pk_test_51PzE4sP4LpXg2Q7qplaceholder_key')
-STRIPE_SECRET_KEY = env('STRIPE_SECRET_KEY', default='sk_test_51PzE4sP4LpXg2Q7q0placeholder_key')
+if DEBUG:
+    STRIPE_PUBLIC_KEY = env('STRIPE_PUBLIC_KEY', default='pk_test_51PzE4sP4LpXg2Q7qplaceholder_key')
+    STRIPE_SECRET_KEY = env('STRIPE_SECRET_KEY', default='sk_test_51PzE4sP4LpXg2Q7q0placeholder_key')
+else:
+    STRIPE_PUBLIC_KEY = env('STRIPE_PUBLIC_KEY')
+    STRIPE_SECRET_KEY = env('STRIPE_SECRET_KEY')
 STRIPE_WEBHOOK_SECRET = env('STRIPE_WEBHOOK_SECRET', default='')

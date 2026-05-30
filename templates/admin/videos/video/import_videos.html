@@ -55,6 +55,32 @@
             </span>
         </div>
 
+        <!-- Option 3: Upload Physique Multiple -->
+        <div style="margin-bottom: 2rem; border-top: 1px solid #eee; padding-top: 1.5rem;">
+            <h3 style="margin-bottom: 0.75rem; color: #E6007E;">Option C : Upload Multiple (Fichiers physiques .mp4)</h3>
+            <span style="display: block; font-size: 0.85rem; color: #666; margin-bottom: 1rem;">
+                Remplissez les cases ci-dessous pour uploader jusqu'à 10 vidéos simultanément. Seules les lignes avec un fichier et un titre seront traitées.
+            </span>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                {% for i in "1234567890"|make_list %}
+                <div style="display: flex; gap: 10px; align-items: center; background: #f9f9f9; padding: 10px; border: 1px solid #ddd; border-radius: 5px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <label style="display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 0.3rem; color: #555;">Vidéo {{ forloop.counter }}</label>
+                        <input type="file" name="file_{{ forloop.counter }}" accept="video/*" style="width: 100%;">
+                    </div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <label style="display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 0.3rem; color: #555;">Titre</label>
+                        <input type="text" name="title_{{ forloop.counter }}" placeholder="Titre de la vidéo" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                    </div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <label style="display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 0.3rem; color: #555;">Tags (séparés par des virgules)</label>
+                        <input type="text" name="tags_{{ forloop.counter }}" placeholder="ex: humour, fail, buzz" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
         <!-- Submit actions -->
         <div style="border-top: 2px solid #eee; padding-top: 1.5rem;">
             <button type="submit" class="button" style="background: #E6007E; color: white; padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.95rem;">
