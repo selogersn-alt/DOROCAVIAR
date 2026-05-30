@@ -61,6 +61,8 @@ CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[
     'https://157.180.127.70:8005',
     'http://127.0.0.1:8000',
     'http://localhost:8000',
+    'https://doro.digitalh.net',
+    'http://doro.digitalh.net',
 ])
 
 if not DEBUG:
