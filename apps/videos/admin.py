@@ -112,11 +112,10 @@ class VideoAdmin(admin.ModelAdmin):
             bulk_urls = request.POST.get("bulk_urls", "")
             csv_file = request.FILES.get("csv_file")
             
-            if not cat_id:
-                self.message_user(request, "Veuillez choisir une catégorie.", messages.ERROR)
-                return redirect("..")
+            category = None
+            if cat_id:
+                category = get_object_or_404(Category, id=cat_id)
                 
-            category = get_object_or_404(Category, id=cat_id)
             uploader = None
             if uploader_id:
                 uploader = User.objects.filter(id=uploader_id).first()
@@ -125,6 +124,9 @@ class VideoAdmin(admin.ModelAdmin):
             
             # Traiter les URLs collées
             if bulk_urls.strip():
+                if not category:
+                    self.message_user(request, "Veuillez choisir une catégorie par défaut pour les liens collés.", messages.ERROR)
+                    return redirect("..")
                 lines = [line.strip() for line in bulk_urls.split('\n') if line.strip()]
                 for line in lines:
                     embed_url, thumbnail_url, title = self._parse_video_url(line)
@@ -140,6 +142,9 @@ class VideoAdmin(admin.ModelAdmin):
                     
             # Traiter le fichier CSV
             if csv_file:
+                if not category:
+                    self.message_user(request, "Veuillez choisir une catégorie par défaut pour l'import CSV.", messages.ERROR)
+                    return redirect("..")
                 if csv_file.name.endswith('.csv'):
                     data_set = csv_file.read().decode('UTF-8')
                     io_string = io.StringIO(data_set)
@@ -178,12 +183,21 @@ class VideoAdmin(admin.ModelAdmin):
                 video_file = request.FILES.get(f"file_{i}")
                 title = request.POST.get(f"title_{i}")
                 tags = request.POST.get(f"tags_{i}")
+                specific_cat_id = request.POST.get(f"category_{i}")
+                
+                final_category = category
+                if specific_cat_id:
+                    final_category = Category.objects.filter(id=specific_cat_id).first()
                 
                 if video_file and title:
+                    if not final_category:
+                        self.message_user(request, f"La vidéo '{title}' a été ignorée car aucune catégorie n'est sélectionnée.", messages.WARNING)
+                        continue
+                        
                     vid = Video.objects.create(
                         title=title.strip(),
                         video_file=video_file,
-                        category=category,
+                        category=final_category,
                         uploader=uploader,
                         is_published=True
                     )

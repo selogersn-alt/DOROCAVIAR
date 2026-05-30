@@ -15,8 +15,8 @@
         <!-- Sélection de la catégorie -->
         <div style="margin-bottom: 1.5rem;">
             <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; color: #333;">Catégorie par défaut :</label>
-            <select name="category" required style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; max-width: 400px;">
-                <option value="">-- Choisir une catégorie --</option>
+            <select name="category" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; max-width: 400px;">
+                <option value="">-- Choisir une catégorie par défaut --</option>
                 {% for cat in categories %}
                     <option value="{{ cat.id }}">{{ cat }}</option>
                 {% endfor %}
@@ -63,18 +63,27 @@
             </span>
             <div style="display: flex; flex-direction: column; gap: 1rem;">
                 {% for i in "1234567890"|make_list %}
-                <div style="display: flex; gap: 10px; align-items: center; background: #f9f9f9; padding: 10px; border: 1px solid #ddd; border-radius: 5px; flex-wrap: wrap;">
-                    <div style="flex: 1; min-width: 200px;">
+                <div style="display: flex; gap: 10px; align-items: flex-start; background: #f9f9f9; padding: 10px; border: 1px solid #ddd; border-radius: 5px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 180px;">
                         <label style="display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 0.3rem; color: #555;">Vidéo {{ forloop.counter }}</label>
                         <input type="file" name="file_{{ forloop.counter }}" accept="video/*" style="width: 100%;">
                     </div>
-                    <div style="flex: 1; min-width: 200px;">
+                    <div style="flex: 1; min-width: 180px;">
                         <label style="display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 0.3rem; color: #555;">Titre</label>
                         <input type="text" name="title_{{ forloop.counter }}" placeholder="Titre de la vidéo" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
                     </div>
-                    <div style="flex: 1; min-width: 200px;">
-                        <label style="display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 0.3rem; color: #555;">Tags (séparés par des virgules)</label>
-                        <input type="text" name="tags_{{ forloop.counter }}" placeholder="ex: humour, fail, buzz" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                    <div style="flex: 1; min-width: 180px;">
+                        <label style="display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 0.3rem; color: #555;">Catégorie</label>
+                        <select name="category_{{ forloop.counter }}" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                            <option value="">Utiliser la catégorie par défaut</option>
+                            {% for cat in categories %}
+                                <option value="{{ cat.id }}">{{ cat }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="flex: 1; min-width: 180px;">
+                        <label style="display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 0.3rem; color: #555;">Tags (séparés par virgules)</label>
+                        <input type="text" name="tags_{{ forloop.counter }}" placeholder="ex: humour, fail" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
                     </div>
                 </div>
                 {% endfor %}
