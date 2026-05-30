@@ -196,7 +196,9 @@
                 <video 
                     x-ref="videoPlayer"
                     @ended="postRollActive = true"
-                    controls 
+                    controls
+                    controlsList="nodownload"
+                    oncontextmenu="return false;"
                     poster="{{ video.thumbnail }}"
                     preload="metadata"
                     class="absolute inset-0 w-full h-full object-contain"

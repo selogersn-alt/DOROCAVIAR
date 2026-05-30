@@ -884,7 +884,7 @@
     <!-- Bloqueur de publicité détecté overlay -->
     <div 
         id="adblock-barrier" 
-        class="fixed inset-0 z-[99999] bg-black/98 flex flex-col items-center justify-center p-6 text-center select-none"
+        class="fixed inset-0 z-[99999] bg-black flex flex-col items-center justify-center p-6 text-center select-none"
         style="display: none;"
     >
         <div class="max-w-md w-full glass-panel p-8 rounded-3xl border border-brand-primary/40 shadow-glow flex flex-col items-center">
@@ -904,12 +904,22 @@
         </div>
     </div>
 
+    <!-- Si le JS est désactivé (souvent fait par les adblockers extrêmes) -->
+    <noscript>
+        <div class="fixed inset-0 z-[99999] bg-black flex flex-col items-center justify-center p-6 text-center select-none">
+            <div class="max-w-md w-full glass-panel p-8 rounded-3xl border border-brand-primary/40 shadow-glow flex flex-col items-center">
+                <i class="fa-solid fa-triangle-exclamation text-red-500 text-4xl mb-4"></i>
+                <h3 class="text-xl font-extrabold text-white mb-3">JavaScript requis</h3>
+                <p class="text-xs text-brand-muted">Veuillez activer JavaScript et désactiver vos extensions de blocage pour utiliser ce site.</p>
+            </div>
+        </div>
+    </noscript>
+
     <!-- Scripts de sécurité et de détection -->
     <script>
         (function() {
-            // Détection du bloqueur de publicité
+            // Détection du bloqueur de publicité ultra agressive
             window.addEventListener('load', function() {
-                // Créer un élément leurre mimant une publicité
                 const decoy = document.createElement('div');
                 decoy.id = 'ad-placement-detector';
                 decoy.className = 'pub_300x250 pub_300x250m pub_728x90 text-ad textAd ad-server';
@@ -917,14 +927,17 @@
                 document.body.appendChild(decoy);
                 
                 setTimeout(function() {
-                    // Si l'élément est masqué ou supprimé par le bloqueur, bloquer l'accès
+                    // Si l'élément est masqué ou supprimé par le bloqueur, bloquer l'accès TOTALEMENT
                     if (decoy.offsetHeight === 0 || decoy.offsetWidth === 0 || window.getComputedStyle(decoy).display === 'none') {
-                        document.getElementById('adblock-barrier').style.display = 'flex';
-                        // Bloquer le scroll
+                        const barrier = document.getElementById('adblock-barrier');
+                        // Détruire tout le reste du site pour empêcher le contournement via l'inspecteur d'éléments
+                        document.body.innerHTML = '';
+                        document.body.appendChild(barrier);
+                        barrier.style.display = 'flex';
                         document.body.style.overflow = 'hidden';
                     }
-                    decoy.remove();
-                }, 300);
+                    if (document.body.contains(decoy)) decoy.remove();
+                }, 400);
             });
 
             // Empêcher l'usage de F12, du clic droit et du code source

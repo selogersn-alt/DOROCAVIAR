@@ -95,7 +95,7 @@
     <div class="short-item">
         <!-- Lecteur Vidéo -->
         {% if short.video_file %}
-            <video class="short-video" loop playsinline autoplay muted>
+            <video class="short-video" loop playsinline autoplay muted controlsList="nodownload" oncontextmenu="return false;">
                 <source src="{{ short.video_file.url }}" type="video/mp4">
             </video>
         {% else %}
